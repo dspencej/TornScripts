@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Pickpocketing Colors
 // @namespace    https://github.com/dspencej
-// @version      1.0.2
+// @version      1.0.3
 // @description  Automatically colorizes target elements based on their risk level and user skill, and adds a color-coded border for easy identification, based on the script by Korbrm [2931507]
 // @author       Dustin Spencer
 // @match        https://www.torn.com/loader.php?sid=crimes*
@@ -20,47 +20,6 @@
         "Unsafe": "#f59f00",
         "Risky": "#f76707",
         "Dangerous": "#f03e3e",
-        "Very Dangerous": "#7048e8",
-    };
-
-    const tier1 = {
-        "Safe": "#37b24d",
-        "Moderately Unsafe": "#f76707",
-        "Unsafe": "#f03e3e",
-        "Risky": "#f03e3e",
-        "Dangerous": "#f03e3e",
-        "Very Dangerous": "#7048e8",
-    };
-    const tier2 = {
-        "Safe": "#37b24d",
-        "Moderately Unsafe": "#37b24d",
-        "Unsafe": "#f76707",
-        "Risky": "#f03e3e",
-        "Dangerous": "#f03e3e",
-        "Very Dangerous": "#7048e8",
-    };
-    const tier3 = {
-        "Safe": "#37b24d",
-        "Moderately Unsafe": "#37b24d",
-        "Unsafe": "#37b24d",
-        "Risky": "#f76707",
-        "Dangerous": "#f03e3e",
-        "Very Dangerous": "#7048e8",
-    };
-    const tier4 = {
-        "Safe": "#37b24d",
-        "Moderately Unsafe": "#37b24d",
-        "Unsafe": "#37b24d",
-        "Risky": "#37b24d",
-        "Dangerous": "#f76707",
-        "Very Dangerous": "#7048e8",
-    };
-    const tier5 = {
-        "Safe": "#37b24d",
-        "Moderately Unsafe": "#37b24d",
-        "Unsafe": "#37b24d",
-        "Risky": "#37b24d",
-        "Dangerous": "#37b24d",
         "Very Dangerous": "#7048e8",
     };
 
@@ -101,18 +60,17 @@
         if (pickpocketSkill === lastSkill) return;  // No need to update if the skill is the same
         lastSkill = pickpocketSkill;
 
-        // Update sideColorMap based on skill level
         let sideColorMap;
         if (pickpocketSkill < 10) {
-            sideColorMap = tier1;
+            sideColorMap = categoryColorMap;
         } else if (pickpocketSkill < 35) {
-            sideColorMap = tier2;
+            sideColorMap = categoryColorMap;
         } else if (pickpocketSkill < 65) {
-            sideColorMap = tier3;
+            sideColorMap = categoryColorMap;
         } else if (pickpocketSkill < 80) {
-            sideColorMap = tier4;
+            sideColorMap = categoryColorMap;
         } else {
-            sideColorMap = tier5;
+            sideColorMap = categoryColorMap;
         }
 
         const divElements = document.querySelectorAll('.titleAndProps___DdeVu:not(.processed)');
@@ -139,31 +97,9 @@
         });
     }
 
-    // Use MutationObserver to detect content changes dynamically
     const observer = new MutationObserver(updateDivColors);
     observer.observe(document.body, {childList: true, subtree: true});
 
-    // Optional: Add a legend to explain the color categories
-    function addLegend() {
-        const legend = document.createElement('div');
-        legend.style.position = 'fixed';
-        legend.style.bottom = '10px';
-        legend.style.right = '10px';
-        legend.style.backgroundColor = '#fff';
-        legend.style.padding = '50px';
-        legend.style.border = '1px solid #ccc';
-        legend.innerHTML = `
-           <strong>Legend:</strong><br>
-           <span style="color: #37b24d;">Safe</span><br>
-           <span style="color: #f76707;">Moderately Unsafe</span><br>
-           <span style="color: #f03e3e;">Dangerous</span>
-       `;
-        document.body.appendChild(legend);
-    }
-
-    addLegend();
-
-    // Retry logic for dynamically loading content
     function retryUntilSuccess() {
         updateDivColors();
         setTimeout(retryUntilSuccess, 2000);
