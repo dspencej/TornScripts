@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Better Chat
 // @namespace    https://github.com/dspencej
-// @version      3.2.0
+// @version      1.0.0
 // @description  Improvements to the usability of chats 2.0 with modularization, performance optimizations, and accessibility features. Adapted from the original script by DeKleineKobini [2114440].
 // @author       Dustin Spencer
 // @license      MIT
