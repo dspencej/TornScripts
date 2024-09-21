@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "tornscripts"
+version = "0.1.0"
+description = "A collection of Torn scripts"
+authors = ["Dustin Spencer"]
+license = "MIT"
+
+# Specify Python version compatibility
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.dev-dependencies]
+ruff = "^0.6.6"
+
+# Configure Ruff linting and formatting settings
+[tool.ruff]
+line-length = 88  # Maximum line length for formatting
+select = ["E", "F", "W"]  # Example: Enable error, formatting, and warning checks
+ignore = ["E501"]  # Example: Ignore line length rule (E501)
+target-version = "py38"  # Target Python version for Ruff
+fix = true  # Automatically apply formatting fixes
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
