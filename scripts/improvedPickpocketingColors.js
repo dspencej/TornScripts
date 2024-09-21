@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Pickpocketing Colors
-// @namespace    https://github.com/dspencej/TornScripts
-// @version      1.0.1
+// @namespace    https://github.com/dspencej
+// @version      1.0.2
 // @description  Automatically colorizes target elements based on their risk level and user skill, and adds a color-coded border for easy identification, based on the script by Korbrm [2931507]
 // @author       Dustin Spencer
 // @match        https://www.torn.com/loader.php?sid=crimes*
@@ -139,6 +139,7 @@
         });
     }
 
+    // Use MutationObserver to detect content changes dynamically
     const observer = new MutationObserver(updateDivColors);
     observer.observe(document.body, {childList: true, subtree: true});
 
@@ -149,7 +150,7 @@
         legend.style.bottom = '10px';
         legend.style.right = '10px';
         legend.style.backgroundColor = '#fff';
-        legend.style.padding = '10px';
+        legend.style.padding = '50px';
         legend.style.border = '1px solid #ccc';
         legend.innerHTML = `
            <strong>Legend:</strong><br>
@@ -161,4 +162,12 @@
     }
 
     addLegend();
+
+    // Retry logic for dynamically loading content
+    function retryUntilSuccess() {
+        updateDivColors();
+        setTimeout(retryUntilSuccess, 2000);
+    }
+
+    retryUntilSuccess();
 })();
