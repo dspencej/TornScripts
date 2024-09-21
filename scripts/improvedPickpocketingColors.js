@@ -1,12 +1,14 @@
 // ==UserScript==
-// @name         Target-Risk-Colorizer
-// @namespace    https://github.com/dspencej/TornScripts/blob/main/scripts/improvedPickpocketingColors.js
+// @name         Improved Pickpocketing Colors
+// @namespace    https://github.com/dspencej
 // @version      1.0.1
 // @description  Automatically colorizes target elements based on their risk level and user skill, and adds a color-coded border for easy identification, based on the script by Korbrm [2931507]
 // @author       Dustin Spencer
 // @match        https://www.torn.com/loader.php?sid=crimes*
 // @grant        none
 // @license      MIT
+// @updateURL    https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/improvedPickpocketingColors.js
+// @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/improvedPickpocketingColors.js
 // ==/UserScript==
 
 (function () {
