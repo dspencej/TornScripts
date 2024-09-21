@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Improved Egg Finder
-// @namespace    https://github.com/dspencej
+// @namespace    https://github.com/dspencej/TornScripts/blob/main/scripts/improvedEggFinder.js
 // @version      1.0.0
 // @description  Makes finding eggs a little bit easier with enhanced visuals and user settings.
 // @author       Dustin Spencer, based on original script by Lazerpent [2112641]
