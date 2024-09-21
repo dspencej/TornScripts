@@ -12,8 +12,6 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @license      MIT
-// @downloadURL  https://github.com/dspencej/TornScripts/blob/main/scripts/improvedCrimeCrackHelper.js
-// @updateURL    https://github.com/dspencej/TornScripts/blob/main/scripts/improvedCrimeCrackHelper.js
 // ==/UserScript==
 'use strict';
 

@@ -7,8 +7,6 @@
 // @match        https://www.torn.com/loader.php?sid=crimes*
 // @grant        none
 // @license      MIT
-// @updateURL    https://github.com/dspencej/TornScripts/blob/main/scripts/improvedPickpocketingColors.js
-// @downloadURL  https://github.com/dspencej/TornScripts/blob/main/scripts/improvedPickpocketingColors.js
 // ==/UserScript==
 
 (function () {
