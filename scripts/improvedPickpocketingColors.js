@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Improved Pickpocketing Colors
-// @namespace    https://github.com/dspencej
+// @namespace    https://github.com/dspencej/TornScripts
 // @version      1.0.1
 // @description  Automatically colorizes target elements based on their risk level and user skill, and adds a color-coded border for easy identification, based on the script by Korbrm [2931507]
 // @author       Dustin Spencer

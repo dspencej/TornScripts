@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Improved Crime Chain Calculator
-// @namespace    https://github.com/dspencej
+// @namespace    https://github.com/dspencej/TornScripts
 // @version      1.0.0
 // @description  Calculates and displays your current crime chain with improved UI, error handling, and performance. Adapted from script by Ironhydedragon [2428902]
 // @author       Dustin Spencer
