@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Torn Set Calculator Improved
+// @name         Improved Torn Set Calculator
 // @namespace    https://github.com/dspencej
 // @version      1.0.0
 // @description  Calculates prices of plushie, flower, and other sets with improved sorting, error handling, and user preferences. Adapted from script by MrHat / foilman
