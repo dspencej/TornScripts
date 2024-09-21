@@ -8,8 +8,8 @@
 // @match        https://www.torn.com/*
 // @grant        GM_addStyle
 // @run-at       document-start
-// @downloadURL  https://github.com/dspencej/TornScripts/blob/main/scripts/betterChat.js
-// @updateURL    https://github.com/dspencej/TornScripts/blob/main/scripts/betterChat.js
+// @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/improvedBetterChat.js
+// @updateURL    https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/improvedBetterChat.js
 // ==/UserScript==
 
 (function () {
