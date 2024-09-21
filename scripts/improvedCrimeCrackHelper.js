@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         ImprovedCrimeCrackHelper
-// @namespace    https://github.com/dspencej/TornScripts/blob/main/scripts/improvedCrimeCrackHelper.js
+// @namespace    https://github.com/dspencej
 // @version      1.0.1
 // @description  Utilize password database to crack Torn crimes, including support for TornPDA. Adapted from the original script by nodelore [2786679] and NEvaldas [352097].
 // @author       Dustin Spencer
@@ -12,6 +12,8 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @license      MIT
+// @updateURL    https://github.com/dspencej/TornScripts/blob/main/scripts/improvedCrimeCrackHelper.js
+// @downloadURL  https://github.com/dspencej/TornScripts/blob/main/scripts/improvedCrimeCrackHelper.js
 // ==/UserScript==
 'use strict';
 
