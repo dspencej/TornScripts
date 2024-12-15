@@ -18,16 +18,16 @@
         const reviveButton = document.querySelector('.profile-button-revive');
         if (reviveButton) {
             // Enlarge the button
-            reviveButton.style.width = '80px';
-            reviveButton.style.height = '80px';
+            reviveButton.style.width = '100px';
+            reviveButton.style.height = '100px';
             reviveButton.style.padding = '10px';
             reviveButton.style.margin = '10px';
 
             // Enlarge the SVG icon within the button
             const svgIcon = reviveButton.querySelector('svg');
             if (svgIcon) {
-                svgIcon.style.width = '60px';
-                svgIcon.style.height = '60px';
+                svgIcon.style.width = '80px';
+                svgIcon.style.height = '80px';
             }
 
             console.log('Revive button has been enlarged.');
