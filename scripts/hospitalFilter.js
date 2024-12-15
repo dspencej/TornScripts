@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn Hospital Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.0.0
+// @version      1.0.1
 // @description  Adds filtering functionality to the Torn hospital list.
 // @author       Dustin Spencer
 // @license      MIT
