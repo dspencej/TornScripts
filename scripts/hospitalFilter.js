@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.1.1
-// @description  Adds functionality to hide users with disabled revives on the Torn hospital page.
+// @version      1.2.0
+// @description  Adds functionality to hide users with disabled revives or specific hospitalization reasons on the Torn hospital page.
 // @author       Dustin Spencer
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
@@ -30,7 +30,7 @@
 
         const filterButton = document.createElement('button');
         filterButton.id = 'revive-filter-button';
-        filterButton.textContent = 'Hide Users with Disabled Revives';
+        filterButton.textContent = 'Filter Users';
         filterButton.style.padding = '10px 20px';
         filterButton.style.backgroundColor = '#444';
         filterButton.style.color = '#fff';
@@ -49,16 +49,22 @@
         }
     };
 
-    // Hide users with disabled revives
+    // Hide users with disabled revives or "Hospitalized by" in the reason
     const hideDisabledRevives = () => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
         userElements.forEach((user) => {
             const reviveButton = user.querySelector('a.revive');
-            if (reviveButton && reviveButton.classList.contains('reviveNotAvailable')) {
+            const reasonElement = user.querySelector('.reason');
+            const reasonText = reasonElement ? reasonElement.textContent.trim() : '';
+
+            const hasDisabledRevives = reviveButton && reviveButton.classList.contains('reviveNotAvailable');
+            const hasHospitalizedByReason = reasonText.startsWith('Hospitalized by');
+
+            if (hasDisabledRevives || hasHospitalizedByReason) {
                 user.style.display = 'none'; // Hide the user
             }
         });
-        console.log('Users with disabled revives have been hidden.');
+        console.log('Users with disabled revives or "Hospitalized by" reasons have been hidden.');
     };
 
     // Observe DOM changes to ensure the button is re-added if the page content changes
