@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.2.0
+// @version      1.2.1
 // @description  Adds functionality to hide users with disabled revives or specific hospitalization reasons on the Torn hospital page.
 // @author       Dustin Spencer
 // @license      MIT
@@ -58,7 +58,7 @@
             const reasonText = reasonElement ? reasonElement.textContent.trim() : '';
 
             const hasDisabledRevives = reviveButton && reviveButton.classList.contains('reviveNotAvailable');
-            const hasHospitalizedByReason = reasonText.startsWith('Hospitalized by');
+            const hasHospitalizedByReason = reasonText.includes('Hospitalized by');
 
             if (hasDisabledRevives || hasHospitalizedByReason) {
                 user.style.display = 'none'; // Hide the user
