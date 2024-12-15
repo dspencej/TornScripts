@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.2.1
-// @description  Adds functionality to hide users with disabled revives or specific hospitalization reasons on the Torn hospital page.
+// @version      1.3.0
+// @description  Adds filtering functionality to the Torn hospital page, hides specific players based on revive status or hospitalization reasons.
 // @author       Dustin Spencer
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
@@ -12,6 +12,8 @@
 
 (function () {
     'use strict';
+
+    let filterActive = true; // Filter is applied by default
 
     // Create the filter button UI
     const createFilterButton = () => {
@@ -30,14 +32,14 @@
 
         const filterButton = document.createElement('button');
         filterButton.id = 'revive-filter-button';
-        filterButton.textContent = 'Filter Users';
+        filterButton.textContent = 'Disable Filter';
         filterButton.style.padding = '10px 20px';
         filterButton.style.backgroundColor = '#444';
         filterButton.style.color = '#fff';
         filterButton.style.border = 'none';
         filterButton.style.borderRadius = '5px';
         filterButton.style.cursor = 'pointer';
-        filterButton.addEventListener('click', hideDisabledRevives);
+        filterButton.addEventListener('click', toggleFilter);
 
         container.appendChild(filterButton);
 
@@ -49,8 +51,21 @@
         }
     };
 
-    // Hide users with disabled revives or "Hospitalized by" in the reason
-    const hideDisabledRevives = () => {
+    // Apply or remove the filter based on the current state
+    const toggleFilter = () => {
+        filterActive = !filterActive;
+        const filterButton = document.querySelector('#revive-filter-button');
+        filterButton.textContent = filterActive ? 'Disable Filter' : 'Enable Filter';
+
+        if (filterActive) {
+            applyFilter();
+        } else {
+            clearFilter();
+        }
+    };
+
+    // Apply the filter to hide users with disabled revives or "Hospitalized by"
+    const applyFilter = () => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
         userElements.forEach((user) => {
             const reviveButton = user.querySelector('a.revive');
@@ -64,7 +79,16 @@
                 user.style.display = 'none'; // Hide the user
             }
         });
-        console.log('Users with disabled revives or "Hospitalized by" reasons have been hidden.');
+        console.log('Filter applied: Users with disabled revives or "Hospitalized by" reasons are hidden.');
+    };
+
+    // Clear the filter to show all users
+    const clearFilter = () => {
+        const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
+        userElements.forEach((user) => {
+            user.style.display = ''; // Reset display to default
+        });
+        console.log('Filter cleared: All users are visible.');
     };
 
     // Observe DOM changes to ensure the button is re-added if the page content changes
@@ -72,6 +96,9 @@
         const observer = new MutationObserver(() => {
             if (!document.querySelector('#revive-filter-button')) {
                 createFilterButton();
+            }
+            if (filterActive) {
+                applyFilter(); // Reapply filter if new elements are added
             }
         });
 
@@ -86,6 +113,7 @@
     // Initialize the script
     const init = () => {
         createFilterButton();
+        applyFilter(); // Apply the filter by default
         observeDOMChanges();
     };
 
