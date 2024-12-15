@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Torn Hospital Filter
-// @namespace    https://github.com/your-namespace
-// @version      1.1.0
+// @namespace    https://github.com/dspencej/TornScripts
+// @version      1.0.0
 // @description  Adds filtering functionality to the Torn hospital list.
-// @author       Your Name
+// @author       Dustin Spencer
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
-// @grant        none
+// @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hospitalFilter.js
+// @updateURL    https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hospitalFilter.js
 // ==/UserScript==
 
 (function () {
@@ -63,6 +64,7 @@
     // Filter function
     const filterHospitalList = (filterText, hideMatches) => {
         const userList = document.querySelector('.user-info-list-wrap.revive');
+        console.log('Filter button pressed!');
         if (!userList) return;
 
         const users = userList.querySelectorAll('li');
@@ -82,7 +84,7 @@
     // Set up the filter menu and attach functionality
     const setupFilter = () => {
         const { input, hideCheckbox, filterButton } = createFilterUI();
-
+        console.log('Setting up listeners.');
         filterButton.addEventListener('click', () => {
             const filterText = input.value.trim();
             const hideMatches = hideCheckbox.checked;
