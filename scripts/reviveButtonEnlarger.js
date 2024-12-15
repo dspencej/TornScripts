@@ -1,33 +1,33 @@
 // ==UserScript==
-// @name         Torn Profile Revive Button Enlarger
+// @name         Torn Profile Button Enhancements
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.0.0
-// @description  Enlarges the revive button on a user's profile page for easier and faster clicking.
+// @version      1.1.0
+// @description  Enlarges the revive button and hides the display case button on a user's profile page in Torn.
 // @author       Dustin Spencer
 // @license      MIT
 // @match        https://www.torn.com/profiles.php?XID=*
-// @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/reviveButtonEnlarger.js
-// @updateURL    https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/reviveButtonEnlarger.js
+// @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/profileButtonEnhancements.js
+// @updateURL    https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/profileButtonEnhancements.js
 // ==/UserScript==
 
 (function () {
     'use strict';
 
-    // Adjust the revive button when the page loads
+    // Enlarge the revive button
     const enlargeReviveButton = () => {
         const reviveButton = document.querySelector('.profile-button-revive');
         if (reviveButton) {
             // Enlarge the button
-            reviveButton.style.width = '80px'; // Increased width
-            reviveButton.style.height = '80px'; // Increased height
+            reviveButton.style.width = '80px';
+            reviveButton.style.height = '80px';
             reviveButton.style.padding = '10px';
             reviveButton.style.margin = '10px';
 
-            // Enlarge the SVG icon inside the button
+            // Enlarge the SVG icon within the button
             const svgIcon = reviveButton.querySelector('svg');
             if (svgIcon) {
-                svgIcon.style.width = '60px'; // Adjust icon size
-                svgIcon.style.height = '60px'; // Adjust icon size
+                svgIcon.style.width = '60px';
+                svgIcon.style.height = '60px';
             }
 
             console.log('Revive button has been enlarged.');
@@ -36,10 +36,27 @@
         }
     };
 
-    // Observe changes to ensure the button is enlarged if the page dynamically updates
+    // Hide the display case button
+    const hideDisplayCaseButton = () => {
+        const displayCaseButton = document.querySelector('.profile-button-viewDisplayCabinet');
+        if (displayCaseButton) {
+            displayCaseButton.style.display = 'none'; // Hide the button
+            console.log('Display case button has been hidden.');
+        } else {
+            console.warn('Display case button not found on this profile.');
+        }
+    };
+
+    // Function to handle both actions
+    const handleProfileButtons = () => {
+        enlargeReviveButton();
+        hideDisplayCaseButton();
+    };
+
+    // Observe DOM changes for dynamic content
     const observeDOMChanges = () => {
         const observer = new MutationObserver(() => {
-            enlargeReviveButton();
+            handleProfileButtons();
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
@@ -47,10 +64,10 @@
 
     // Initialize the script
     const init = () => {
-        enlargeReviveButton();
+        handleProfileButtons();
         observeDOMChanges();
     };
 
     init();
-    console.log('Torn Profile Revive Button Enlarger Script loaded successfully.');
+    console.log('Torn Profile Button Enhancements Script loaded successfully.');
 })();
