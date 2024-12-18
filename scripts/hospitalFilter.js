@@ -76,8 +76,9 @@
             const hasHospitalizedByReason1 = reasonText.includes('Hospitalized by');
             const hasHospitalizedByReason2 = reasonText.includes('Mugged by');
             const hasHospitalizedByReason3 = reasonText.includes('Attacked by');
+            const hasHospitalizedByReason4 = reasonText.includes('Ipecac Syrup ingestion');
 
-            if (hasDisabledRevives || hasHospitalizedByReason1 || hasHospitalizedByReason2 || hasHospitalizedByReason3) {
+            if (hasDisabledRevives || hasHospitalizedByReason1 || hasHospitalizedByReason2 || hasHospitalizedByReason3 || hasHospitalizedByReason4) {
                 user.style.display = 'none'; // Hide the user
             }
         });
