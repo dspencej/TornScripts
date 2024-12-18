@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      2.3.0
-// @description  Adds filtering functionality to the Torn hospital page.
+// @version      2.5.0
+// @description  Adds filtering functionality to the Torn hospital page with persistent filters and enhanced UI. "Disabled Revives" condition overrides other filters if active.
 // @author       Dustin Spencer
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
@@ -51,7 +51,6 @@
 
     // Create the filter UI
     const createFilterUI = () => {
-        // Prevent duplicate UI
         if (document.querySelector('#revive-filter-container')) return;
 
         const container = document.createElement('div');
@@ -91,10 +90,9 @@
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = option.id;
-            checkbox.checked = filterStates[option.id]; // Set checkbox state based on localStorage or default
+            checkbox.checked = filterStates[option.id];
             checkbox.style.display = 'none';
 
-            // Style the checkbox as a toggle
             const toggle = document.createElement('span');
             toggle.className = 'toggle-switch';
             toggle.style.position = 'relative';
@@ -106,7 +104,6 @@
             toggle.style.transition = 'background-color 0.3s';
             toggle.style.cursor = 'pointer';
 
-            // Inner circle
             const toggleCircle = document.createElement('span');
             toggleCircle.style.position = 'absolute';
             toggleCircle.style.width = '16px';
@@ -119,39 +116,22 @@
 
             toggle.appendChild(toggleCircle);
 
-            // Update styles when checkbox is clicked
             checkbox.addEventListener('change', () => {
                 toggle.style.backgroundColor = checkbox.checked ? '#61dafb' : '#ccc';
                 toggleCircle.style.left = checkbox.checked ? '16px' : '2px';
+                applyFilter();
             });
 
             toggle.addEventListener('click', () => {
                 checkbox.checked = !checkbox.checked;
-                checkbox.dispatchEvent(new Event('change')); // Trigger change event
+                checkbox.dispatchEvent(new Event('change'));
             });
 
             wrapper.appendChild(checkbox);
             wrapper.appendChild(toggle);
             wrapper.appendChild(label);
-
             container.appendChild(wrapper);
         });
-
-        const applyButton = document.createElement('button');
-        applyButton.textContent = 'Apply Filters';
-        applyButton.style.padding = '10px 20px';
-        applyButton.style.backgroundColor = '#61dafb';
-        applyButton.style.color = '#000000';
-        applyButton.style.border = 'none';
-        applyButton.style.borderRadius = '5px';
-        applyButton.style.cursor = 'pointer';
-        applyButton.style.marginTop = '10px';
-        applyButton.addEventListener('click', () => {
-            saveFilterStates();
-            applyFilter();
-        });
-
-        container.appendChild(applyButton);
 
         const contentWrapper = document.querySelector('.content-wrapper');
         if (contentWrapper) {
@@ -175,8 +155,13 @@
             const reasonElement = user.querySelector('.reason');
             const reasonText = reasonElement ? reasonElement.textContent.trim() : '';
 
+            // If "Disabled Revives" is active and the user has disabled revives, always hide
+            if (filters['filter-disabled-revives'] && reviveButton && reviveButton.classList.contains('reviveNotAvailable')) {
+                user.style.display = 'none';
+                return;
+            }
+
             const shouldShow =
-                (filters['filter-disabled-revives'] && reviveButton && reviveButton.classList.contains('reviveNotAvailable')) ||
                 (filters['filter-hospitalized-by'] && reasonText.includes('Hospitalized by')) ||
                 (filters['filter-mugged-by'] && reasonText.includes('Mugged by')) ||
                 (filters['filter-attacked-by'] && reasonText.includes('Attacked by')) ||
@@ -193,12 +178,11 @@
         console.log('Filters applied.');
     };
 
-    // Observe DOM changes to ensure the UI is re-added if the page content changes
     const observeDOMChanges = () => {
         const observer = new MutationObserver(() => {
             if (!document.querySelector('#revive-filter-container')) {
                 createFilterUI();
-                applyFilter(); // Reapply filters if new elements are added
+                applyFilter();
             }
         });
 
@@ -210,7 +194,6 @@
         }
     };
 
-    // Initialize the script
     const init = () => {
         createFilterUI();
         applyFilter();
@@ -218,5 +201,5 @@
     };
 
     init();
-    console.log('Torn Hospital Revive Filter Script with enhanced UI loaded successfully.');
+    console.log('Torn Hospital Revive Filter Script with "Disabled Revives" priority loaded successfully.');
 })();
