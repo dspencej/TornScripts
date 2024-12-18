@@ -73,9 +73,10 @@
             const reasonText = reasonElement ? reasonElement.textContent.trim() : '';
 
             const hasDisabledRevives = reviveButton && reviveButton.classList.contains('reviveNotAvailable');
-            const hasHospitalizedByReason = reasonText.includes('Hospitalized by');
+            const hasHospitalizedByReason1 = reasonText.includes('Hospitalized by');
+            const hasHospitalizedByReason2 = reasonText.includes('Mugged by');
 
-            if (hasDisabledRevives || hasHospitalizedByReason) {
+            if (hasDisabledRevives || hasHospitalizedByReason1 || hasHospitalizedByReason2) {
                 user.style.display = 'none'; // Hide the user
             }
         });
