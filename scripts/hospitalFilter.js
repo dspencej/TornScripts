@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.4.0
+// @version      1.5.0
 // @description  Adds filtering functionality to the Torn hospital page, hides specific players based on revive status or hospitalization reasons.
 // @author       Dustin Spencer
 // @license      MIT
@@ -75,8 +75,9 @@
             const hasDisabledRevives = reviveButton && reviveButton.classList.contains('reviveNotAvailable');
             const hasHospitalizedByReason1 = reasonText.includes('Hospitalized by');
             const hasHospitalizedByReason2 = reasonText.includes('Mugged by');
+            const hasHospitalizedByReason3 = reasonText.includes('Attacked by');
 
-            if (hasDisabledRevives || hasHospitalizedByReason1 || hasHospitalizedByReason2) {
+            if (hasDisabledRevives || hasHospitalizedByReason1 || hasHospitalizedByReason2 || hasHospitalizedByReason3) {
                 user.style.display = 'none'; // Hide the user
             }
         });
