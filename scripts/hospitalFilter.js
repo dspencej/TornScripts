@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.3.0
+// @version      1.4.0
 // @description  Adds filtering functionality to the Torn hospital page, hides specific players based on revive status or hospitalization reasons.
 // @author       Dustin Spencer
 // @license      MIT
