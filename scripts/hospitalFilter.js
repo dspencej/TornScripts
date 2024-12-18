@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.6.0
-// @description  Adds filtering functionality to the Torn hospital page with selectable filters via checkboxes.
+// @version      2.2.0
+// @description  Adds filtering functionality to the Torn hospital page.
 // @author       Dustin Spencer
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
@@ -12,6 +12,42 @@
 
 (function () {
     'use strict';
+
+    const FILTER_STORAGE_KEY = 'torn_hospital_filters';
+
+    // Default filter options
+    const filterOptions = [
+        { id: 'filter-disabled-revives', label: 'Disabled Revives' },
+        { id: 'filter-hospitalized-by', label: 'Hospitalized by' },
+        { id: 'filter-mugged-by', label: 'Mugged by' },
+        { id: 'filter-attacked-by', label: 'Attacked by' },
+        { id: 'filter-ipecac-syrup', label: 'Ipecac Syrup' },
+        { id: 'filter-lost-to', label: 'Lost to' },
+        { id: 'filter-crashed', label: 'Crashed' },
+        { id: 'filter-exploded', label: 'Exploded' },
+        { id: 'filter-swat', label: 'SWAT' },
+        { id: 'filter-arson', label: 'Arson' },
+    ];
+
+    // Save filter states to localStorage
+    const saveFilterStates = () => {
+        const states = {};
+        filterOptions.forEach(option => {
+            const checkbox = document.querySelector(`#${option.id}`);
+            states[option.id] = checkbox.checked;
+        });
+        localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(states));
+    };
+
+    // Load filter states from localStorage
+    const loadFilterStates = () => {
+        const savedStates = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) || '{}');
+        const states = filterOptions.reduce((acc, option) => {
+            acc[option.id] = savedStates[option.id] !== undefined ? savedStates[option.id] : true; // Default to checked
+            return acc;
+        }, {});
+        return states;
+    };
 
     // Create the filter UI
     const createFilterUI = () => {
@@ -29,14 +65,7 @@
         container.style.flexDirection = 'column';
         container.style.alignItems = 'start';
 
-        const filterOptions = [
-            { id: 'filter-disabled-revives', label: 'Disabled Revives' },
-            { id: 'filter-hospitalized-by', label: 'Hospitalized by' },
-            { id: 'filter-mugged-by', label: 'Mugged by' },
-            { id: 'filter-attacked-by', label: 'Attacked by' },
-            { id: 'filter-ipecac-syrup', label: 'Ipecac Syrup' },
-            { id: 'filter-lost-to', label: 'Lost to' },
-        ];
+        const filterStates = loadFilterStates();
 
         filterOptions.forEach(option => {
             const label = document.createElement('label');
@@ -48,6 +77,7 @@
             checkbox.type = 'checkbox';
             checkbox.id = option.id;
             checkbox.style.marginRight = '10px';
+            checkbox.checked = filterStates[option.id]; // Set checkbox state based on localStorage or default
 
             label.appendChild(checkbox);
             label.appendChild(document.createTextNode(option.label));
@@ -62,7 +92,10 @@
         applyButton.style.border = 'none';
         applyButton.style.borderRadius = '5px';
         applyButton.style.cursor = 'pointer';
-        applyButton.addEventListener('click', applyFilter);
+        applyButton.addEventListener('click', () => {
+            saveFilterStates();
+            applyFilter();
+        });
 
         container.appendChild(applyButton);
 
@@ -77,29 +110,30 @@
     // Apply the selected filters
     const applyFilter = () => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
-        const filters = {
-            disabledRevives: document.querySelector('#filter-disabled-revives').checked,
-            hospitalizedBy: document.querySelector('#filter-hospitalized-by').checked,
-            muggedBy: document.querySelector('#filter-mugged-by').checked,
-            attackedBy: document.querySelector('#filter-attacked-by').checked,
-            ipecacSyrup: document.querySelector('#filter-ipecac-syrup').checked,
-            lostTo: document.querySelector('#filter-lost-to').checked,
-        };
+        const filters = filterOptions.reduce((acc, option) => {
+            const checkbox = document.querySelector(`#${option.id}`);
+            acc[option.id] = checkbox && checkbox.checked;
+            return acc;
+        }, {});
 
         userElements.forEach((user) => {
             const reviveButton = user.querySelector('a.revive');
             const reasonElement = user.querySelector('.reason');
             const reasonText = reasonElement ? reasonElement.textContent.trim() : '';
 
-            const shouldHide =
-                (filters.disabledRevives && reviveButton && reviveButton.classList.contains('reviveNotAvailable')) ||
-                (filters.hospitalizedBy && reasonText.includes('Hospitalized by')) ||
-                (filters.muggedBy && reasonText.includes('Mugged by')) ||
-                (filters.attackedBy && reasonText.includes('Attacked by')) ||
-                (filters.ipecacSyrup && reasonText.includes('Ipecac Syrup ingestion')) ||
-                (filters.lostTo && reasonText.includes('Lost to'));
+            const shouldShow =
+                (filters['filter-disabled-revives'] && reviveButton && reviveButton.classList.contains('reviveNotAvailable')) ||
+                (filters['filter-hospitalized-by'] && reasonText.includes('Hospitalized by')) ||
+                (filters['filter-mugged-by'] && reasonText.includes('Mugged by')) ||
+                (filters['filter-attacked-by'] && reasonText.includes('Attacked by')) ||
+                (filters['filter-ipecac-syrup'] && reasonText.includes('Ipecac Syrup ingestion')) ||
+                (filters['filter-lost-to'] && reasonText.includes('Lost to')) ||
+                (filters['filter-crashed'] && reasonText.includes('Crashed')) ||
+                (filters['filter-exploded'] && reasonText.includes('Exploded')) ||
+                (filters['filter-swat'] && reasonText.includes('SWAT')) ||
+                (filters['filter-arson'] && reasonText.includes('arson'));
 
-            user.style.display = shouldHide ? 'none' : '';
+            user.style.display = shouldShow ? '' : 'none'; // Show if matching, otherwise hide
         });
 
         console.log('Filters applied.');
@@ -110,6 +144,7 @@
         const observer = new MutationObserver(() => {
             if (!document.querySelector('#revive-filter-container')) {
                 createFilterUI();
+                applyFilter(); // Reapply filters if new elements are added
             }
         });
 
@@ -124,9 +159,10 @@
     // Initialize the script
     const init = () => {
         createFilterUI();
+        applyFilter();
         observeDOMChanges();
     };
 
     init();
-    console.log('Torn Hospital Revive Filter Script with checkboxes loaded successfully.');
+    console.log('Torn Hospital Revive Filter Script with reversed checkbox logic loaded successfully.');
 })();
