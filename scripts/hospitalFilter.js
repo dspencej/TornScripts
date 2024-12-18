@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Torn Hospital Revive Filter (Observer Enhanced)
+// @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
 // @version      2.9.0
 // @description  Adds filtering functionality to the Torn hospital page with persistent filters, and ensures filters are applied once the user list is available.
