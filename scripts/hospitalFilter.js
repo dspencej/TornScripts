@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Torn Hospital Revive Filter (Union Logic)
+// @name         Torn Hospital Revive Filter (Observer Enhanced)
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      3.0.0
-// @description  Each filter independently controls visibility of its associated reason. On = show that reason. Off = hide that reason. Disabled Revives is handled separately.
+// @version      2.9.0
+// @description  Adds filtering functionality to the Torn hospital page with persistent filters, and ensures filters are applied once the user list is available.
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
 // ==/UserScript==
@@ -94,7 +94,7 @@
                 option.reasons = option.reasons.map(r => r.toLowerCase());
             } else if (option.id !== 'filter-disabled-revives') {
                 if (!option.reasons || !Array.isArray(option.reasons)) {
-                    console.warn(`Hospital Revive Filter: Filter ${option.id} is missing valid 'reasons'.`);
+                    console.warn(`Hospital Revive Filter: Filter ${option.id} is missing valid 'reasons'. This filter will be ignored.`);
                     option.reasons = [];
                 }
             }
@@ -177,32 +177,42 @@
     function applyFilter() {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
         if (userElements.length === 0) {
-            // No user elements yet; will be handled by mutation observer when they appear
+            // No user elements yet, wait until they appear via mutation observer
             return;
         }
 
         const filters = loadFilterStates();
+        const anyFilterEnabled = filterOptions.some(opt => opt.id !== 'filter-disabled-revives' && filters[opt.id]);
         const disabledRevivesEnabled = filters['filter-disabled-revives'];
 
-        // For each user, determine if they should be shown
+        // If no filters are enabled, show all users
+        if (!anyFilterEnabled && !disabledRevivesEnabled) {
+            userElements.forEach(user => user.style.display = '');
+            return;
+        }
+
         userElements.forEach(user => {
             const reviveButton = user.querySelector('a.revive');
             const reasonElement = user.querySelector('.reason');
             const reasonText = reasonElement ? reasonElement.textContent.trim().toLowerCase() : '';
 
-            // If disabled revives filter is on and this user is disabled, hide them
+            // Disabled revives check
             if (disabledRevivesEnabled && reviveButton && reviveButton.classList.contains('reviveNotAvailable')) {
                 user.style.display = 'none';
                 return;
             }
 
-            // Check other filters (union logic)
-            let shouldShow = false;
+            // If no other filters enabled, show user
+            if (!anyFilterEnabled) {
+                user.style.display = '';
+                return;
+            }
 
+            // Check other filters
+            let shouldShow = false;
             for (const option of filterOptions) {
                 if (option.id === 'filter-disabled-revives') continue;
                 if (filters[option.id] && option.reasons && option.reasons.some(r => reasonText.includes(r))) {
-                    // If this filter is on and reason matches, show the user
                     shouldShow = true;
                     break;
                 }
@@ -213,8 +223,8 @@
     }
 
     function observeDOMChanges() {
-        // Observe content wrapper
-        const wrapperObserver = new MutationObserver(() => {
+        // Observe changes to contentWrapper to recreate UI if needed
+        const observer = new MutationObserver(() => {
             if (!document.querySelector('#revive-filter-container')) {
                 uiCreated = false;
                 contentWrapper = document.querySelector('.content-wrapper');
@@ -224,15 +234,16 @@
         });
 
         if (contentWrapper) {
-            wrapperObserver.observe(contentWrapper, { childList: true, subtree: true });
+            observer.observe(contentWrapper, { childList: true, subtree: true });
         } else {
             console.error('Hospital Revive Filter: Failed to observe DOM. .content-wrapper not found.');
         }
 
-        // Observe the hospital user list for changes
+        // Observe changes to the hospital list to apply filters whenever new elements appear
         const userListContainer = document.querySelector('.userlist-wrapper.hospital-list-wrapper');
         if (userListContainer) {
             const userObserver = new MutationObserver(() => {
+                // Apply filters whenever user elements change
                 applyFilter();
             });
             userObserver.observe(userListContainer, { childList: true, subtree: true });
@@ -255,5 +266,5 @@
     }
 
     init();
-    console.log('Torn Hospital Revive Filter (Union Logic) initialized.');
+    console.log('Torn Hospital Revive Filter (Observer Enhanced) initialized.');
 })();
