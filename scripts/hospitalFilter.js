@@ -1,9 +1,8 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      2.5.0
-// @description  Adds filtering functionality to the Torn hospital page with persistent filters and enhanced UI. "Disabled Revives" condition overrides other filters if active.
-// @author       Dustin Spencer
+// @version      2.6.0
+// @description  Adds filtering functionality to the Torn hospital page.
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
 // @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hospitalFilter.js
@@ -119,7 +118,8 @@
             checkbox.addEventListener('change', () => {
                 toggle.style.backgroundColor = checkbox.checked ? '#61dafb' : '#ccc';
                 toggleCircle.style.left = checkbox.checked ? '16px' : '2px';
-                applyFilter();
+                saveFilterStates();
+                applyFilter(); // Apply filters when toggles are updated
             });
 
             toggle.addEventListener('click', () => {
@@ -172,7 +172,7 @@
                 (filters['filter-swat'] && reasonText.includes('SWAT')) ||
                 (filters['filter-arson'] && reasonText.includes('arson'));
 
-            user.style.display = shouldShow ? '' : 'none'; // Show if matching, otherwise hide
+            user.style.display = shouldShow ? '' : 'none';
         });
 
         console.log('Filters applied.');
@@ -201,5 +201,5 @@
     };
 
     init();
-    console.log('Torn Hospital Revive Filter Script with "Disabled Revives" priority loaded successfully.');
+    console.log('Torn Hospital Revive Filter Script with toggle update fixed.');
 })();
