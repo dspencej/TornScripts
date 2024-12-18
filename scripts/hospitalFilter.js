@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      2.2.0
+// @version      2.3.0
 // @description  Adds filtering functionality to the Torn hospital page.
 // @author       Dustin Spencer
 // @license      MIT
@@ -56,42 +56,96 @@
 
         const container = document.createElement('div');
         container.id = 'revive-filter-container';
-        container.style.padding = '10px';
-        container.style.backgroundColor = '#1c1c1c';
-        container.style.color = '#fff';
-        container.style.marginBottom = '10px';
-        container.style.borderRadius = '5px';
+        container.style.padding = '15px';
+        container.style.backgroundColor = '#282c34';
+        container.style.color = '#ffffff';
+        container.style.marginBottom = '15px';
+        container.style.borderRadius = '8px';
+        container.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
         container.style.display = 'flex';
         container.style.flexDirection = 'column';
         container.style.alignItems = 'start';
 
+        const header = document.createElement('h3');
+        header.textContent = 'Hospital Filter Options';
+        header.style.marginBottom = '10px';
+        header.style.color = '#61dafb';
+        container.appendChild(header);
+
         const filterStates = loadFilterStates();
 
         filterOptions.forEach(option => {
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.marginBottom = '8px';
+
             const label = document.createElement('label');
-            label.style.display = 'flex';
-            label.style.alignItems = 'center';
-            label.style.marginBottom = '5px';
+            label.setAttribute('for', option.id);
+            label.textContent = option.label;
+            label.style.marginLeft = '10px';
+            label.style.fontSize = '14px';
+            label.style.cursor = 'pointer';
+            label.style.color = '#ffffff';
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = option.id;
-            checkbox.style.marginRight = '10px';
             checkbox.checked = filterStates[option.id]; // Set checkbox state based on localStorage or default
+            checkbox.style.display = 'none';
 
-            label.appendChild(checkbox);
-            label.appendChild(document.createTextNode(option.label));
-            container.appendChild(label);
+            // Style the checkbox as a toggle
+            const toggle = document.createElement('span');
+            toggle.className = 'toggle-switch';
+            toggle.style.position = 'relative';
+            toggle.style.display = 'inline-block';
+            toggle.style.width = '34px';
+            toggle.style.height = '20px';
+            toggle.style.backgroundColor = checkbox.checked ? '#61dafb' : '#ccc';
+            toggle.style.borderRadius = '20px';
+            toggle.style.transition = 'background-color 0.3s';
+            toggle.style.cursor = 'pointer';
+
+            // Inner circle
+            const toggleCircle = document.createElement('span');
+            toggleCircle.style.position = 'absolute';
+            toggleCircle.style.width = '16px';
+            toggleCircle.style.height = '16px';
+            toggleCircle.style.borderRadius = '50%';
+            toggleCircle.style.backgroundColor = '#ffffff';
+            toggleCircle.style.top = '2px';
+            toggleCircle.style.left = checkbox.checked ? '16px' : '2px';
+            toggleCircle.style.transition = 'left 0.3s';
+
+            toggle.appendChild(toggleCircle);
+
+            // Update styles when checkbox is clicked
+            checkbox.addEventListener('change', () => {
+                toggle.style.backgroundColor = checkbox.checked ? '#61dafb' : '#ccc';
+                toggleCircle.style.left = checkbox.checked ? '16px' : '2px';
+            });
+
+            toggle.addEventListener('click', () => {
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change')); // Trigger change event
+            });
+
+            wrapper.appendChild(checkbox);
+            wrapper.appendChild(toggle);
+            wrapper.appendChild(label);
+
+            container.appendChild(wrapper);
         });
 
         const applyButton = document.createElement('button');
         applyButton.textContent = 'Apply Filters';
         applyButton.style.padding = '10px 20px';
-        applyButton.style.backgroundColor = '#444';
-        applyButton.style.color = '#fff';
+        applyButton.style.backgroundColor = '#61dafb';
+        applyButton.style.color = '#000000';
         applyButton.style.border = 'none';
         applyButton.style.borderRadius = '5px';
         applyButton.style.cursor = 'pointer';
+        applyButton.style.marginTop = '10px';
         applyButton.addEventListener('click', () => {
             saveFilterStates();
             applyFilter();
@@ -164,5 +218,5 @@
     };
 
     init();
-    console.log('Torn Hospital Revive Filter Script with reversed checkbox logic loaded successfully.');
+    console.log('Torn Hospital Revive Filter Script with enhanced UI loaded successfully.');
 })();
