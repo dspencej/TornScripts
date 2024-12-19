@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Torn Hospital Revive Filter (Pagination Fixed)
+// @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
 // @version      2.9.2
 // @description  Adds filtering functionality to the Torn hospital page. Retains filter states across pagination.
