@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      2.9.2
-// @description  Adds filtering functionality to the Torn hospital page. Retains filter states across pagination.
+// @version      1.5.1
+// @description  Adds filtering functionality to the Torn hospital page, hides specific players based on revive status or hospitalization reasons.
+// @author       Dustin Spencer
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
 // @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hospitalFilter.js
@@ -12,237 +13,113 @@
 (function () {
     'use strict';
 
-    const FILTER_STORAGE_KEY = 'torn_hospital_filters';
-    const RETRY_INTERVAL = 250;    // Retry interval in ms
-    const MAX_RETRIES = 10;        // Retry limit for applyFilter if content isn't loaded yet
+    let filterActive = true; // Filter is applied by default
 
-    const filterOptions = [
-        { id: 'filter-disabled-revives', label: 'Disabled Revives', reasons: null },
-        { id: 'filter-hospitalized-by', label: 'Hospitalized by', reasons: ['hospitalized by'] },
-        { id: 'filter-mugged-by', label: 'Mugged by', reasons: ['mugged by'] },
-        { id: 'filter-attacked-by', label: 'Attacked by', reasons: ['attacked by'] },
-        { id: 'filter-ipecac-syrup', label: 'Ipecac Syrup', reasons: ['ipecac syrup ingestion'] },
-        { id: 'filter-lost-to', label: 'Lost to', reasons: ['lost to'] },
-        { id: 'filter-crashed', label: 'Crashed', reasons: ['crashed'] },
-        { id: 'filter-exploded', label: 'Exploded', reasons: ['exploded'] },
-        { id: 'filter-swat', label: 'SWAT', reasons: ['swat'] },
-        { id: 'filter-arson', label: 'Arson', reasons: ['arson'] },
-    ];
+    // Create the filter button UI
+    const createFilterButton = () => {
+        // Prevent duplicate buttons
+        if (document.querySelector('#revive-filter-button')) return;
 
-    let uiCreated = false;
-    let contentWrapper = null;
-    let mutationTimeout = null;
-
-    function injectStyles() {
-        if (document.getElementById('revive-filter-styles')) return;
-
-        const style = document.createElement('style');
-        style.id = 'revive-filter-styles';
-        style.textContent = `
-            #revive-filter-container {
-                padding: 15px;
-                background-color: #282c34;
-                color: #ffffff;
-                margin-bottom: 15px;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                display: flex;
-                flex-direction: column;
-                align-items: start;
-            }
-            #revive-filter-container h3 {
-                margin-bottom: 10px;
-                color: #61dafb;
-            }
-            .filter-option-wrapper {
-                display: flex;
-                align-items: center;
-                margin-bottom: 8px;
-            }
-            .toggle-switch {
-                position: relative;
-                display: inline-block;
-                width: 34px;
-                height: 20px;
-                background-color: #ccc;
-                border-radius: 20px;
-                transition: background-color 0.3s;
-                cursor: pointer;
-            }
-            .toggle-switch.checked {
-                background-color: #61dafb;
-            }
-            .toggle-switch-circle {
-                position: absolute;
-                width: 16px;
-                height: 16px;
-                border-radius: 50%;
-                background-color: #ffffff;
-                top: 2px;
-                left: 2px;
-                transition: left 0.3s;
-            }
-            .toggle-switch.checked .toggle-switch-circle {
-                left: 16px;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    const saveFilterStates = () => {
-        const states = {};
-        filterOptions.forEach(option => {
-            const checkbox = document.querySelector(`#${option.id}`);
-            if (checkbox) {
-                states[option.id] = checkbox.checked;
-            }
-        });
-        localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(states));
-    };
-
-    const loadFilterStates = () => {
-        const savedStates = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) || '{}');
-        return filterOptions.reduce((acc, option) => {
-            acc[option.id] = savedStates[option.id] !== undefined ? savedStates[option.id] : true;
-            return acc;
-        }, {});
-    };
-
-    const createFilterUI = () => {
-        if (document.querySelector('#revive-filter-container') || uiCreated) return;
-
-        const filterStates = loadFilterStates();
         const container = document.createElement('div');
-        container.id = 'revive-filter-container';
+        container.style.padding = '10px';
+        container.style.backgroundColor = '#1c1c1c';
+        container.style.color = '#fff';
+        container.style.marginBottom = '10px';
+        container.style.borderRadius = '5px';
+        container.style.display = 'flex';
+        container.style.justifyContent = 'center';
+        container.style.alignItems = 'center';
 
-        const header = document.createElement('h3');
-        header.textContent = 'Hospital Filter Options';
-        container.appendChild(header);
+        const filterButton = document.createElement('button');
+        filterButton.id = 'revive-filter-button';
+        filterButton.textContent = 'Disable Filter';
+        filterButton.style.padding = '10px 20px';
+        filterButton.style.backgroundColor = '#444';
+        filterButton.style.color = '#fff';
+        filterButton.style.border = 'none';
+        filterButton.style.borderRadius = '5px';
+        filterButton.style.cursor = 'pointer';
+        filterButton.addEventListener('click', toggleFilter);
 
-        filterOptions.forEach(option => {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'filter-option-wrapper';
+        container.appendChild(filterButton);
 
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = option.id;
-            checkbox.checked = filterStates[option.id];
-            checkbox.style.display = 'none';
-
-            const toggle = document.createElement('span');
-            toggle.className = 'toggle-switch' + (checkbox.checked ? ' checked' : '');
-            const toggleCircle = document.createElement('span');
-            toggleCircle.className = 'toggle-switch-circle';
-            toggle.appendChild(toggleCircle);
-
-            const label = document.createElement('label');
-            label.setAttribute('for', option.id);
-            label.textContent = option.label;
-
-            checkbox.addEventListener('change', () => {
-                toggle.classList.toggle('checked', checkbox.checked);
-                saveFilterStates();
-                applyFilter();
-            });
-
-            toggle.addEventListener('click', () => {
-                checkbox.checked = !checkbox.checked;
-                checkbox.dispatchEvent(new Event('change'));
-            });
-
-            wrapper.appendChild(checkbox);
-            wrapper.appendChild(toggle);
-            wrapper.appendChild(label);
-            container.appendChild(wrapper);
-        });
-
+        const contentWrapper = document.querySelector('.content-wrapper');
         if (contentWrapper) {
             contentWrapper.prepend(container);
-            uiCreated = true;
         } else {
-            console.error('Hospital Revive Filter: Failed to find .content-wrapper to prepend the filter UI.');
+            console.error('Failed to find content wrapper to prepend the filter button.');
         }
     };
 
-    const applyFilter = (retryCount = 0) => {
+    // Apply or remove the filter based on the current state
+    const toggleFilter = () => {
+        filterActive = !filterActive;
+        const filterButton = document.querySelector('#revive-filter-button');
+        filterButton.textContent = filterActive ? 'Disable Filter' : 'Enable Filter';
+
+        if (filterActive) {
+            applyFilter();
+        } else {
+            clearFilter();
+        }
+    };
+
+    // Apply the filter to hide users with disabled revives or "Hospitalized by"
+    const applyFilter = () => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
-
-        if (userElements.length === 0) {
-            if (retryCount < MAX_RETRIES) {
-                setTimeout(() => applyFilter(retryCount + 1), RETRY_INTERVAL);
-            } else {
-                console.warn('Hospital Revive Filter: User list not found after max retries. Filters not applied.');
-            }
-            return;
-        }
-
-        const filters = loadFilterStates();
-        const anyFilterEnabled = filterOptions.some(opt => opt.id !== 'filter-disabled-revives' && filters[opt.id]);
-        const disabledRevivesEnabled = filters['filter-disabled-revives'];
-
-        if (!anyFilterEnabled && !disabledRevivesEnabled) {
-            userElements.forEach(user => user.style.display = '');
-            return;
-        }
-
-        userElements.forEach(user => {
+        userElements.forEach((user) => {
             const reviveButton = user.querySelector('a.revive');
             const reasonElement = user.querySelector('.reason');
-            const reasonText = reasonElement ? reasonElement.textContent.trim().toLowerCase() : '';
+            const reasonText = reasonElement ? reasonElement.textContent.trim() : '';
 
-            let shouldShow = true;
+            const hasDisabledRevives = reviveButton && reviveButton.classList.contains('reviveNotAvailable');
+            const hasHospitalizedByReason1 = reasonText.includes('Hospitalized by');
+            const hasHospitalizedByReason2 = reasonText.includes('Mugged by');
+            const hasHospitalizedByReason3 = reasonText.includes('Attacked by');
+            const hasHospitalizedByReason4 = reasonText.includes('Ipecac Syrup ingestion');
 
-            if (disabledRevivesEnabled && reviveButton && reviveButton.classList.contains('reviveNotAvailable')) {
-                shouldShow = false;
+            if (hasDisabledRevives || hasHospitalizedByReason1 || hasHospitalizedByReason2 || hasHospitalizedByReason3 || hasHospitalizedByReason4) {
+                user.style.display = 'none'; // Hide the user
             }
-
-            if (anyFilterEnabled) {
-                for (const option of filterOptions) {
-                    if (option.id === 'filter-disabled-revives') continue;
-                    if (filters[option.id] && option.reasons && option.reasons.some(r => reasonText.includes(r))) {
-                        shouldShow = false;
-                        break;
-                    }
-                }
-            }
-
-            user.style.display = shouldShow ? '' : 'none';
         });
+        console.log('Filter applied: Users with disabled revives or "Hospitalized by" reasons are hidden.');
     };
 
+    // Clear the filter to show all users
+    const clearFilter = () => {
+        const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
+        userElements.forEach((user) => {
+            user.style.display = ''; // Reset display to default
+        });
+        console.log('Filter cleared: All users are visible.');
+    };
+
+    // Observe DOM changes to ensure the button is re-added if the page content changes
     const observeDOMChanges = () => {
         const observer = new MutationObserver(() => {
-            clearTimeout(mutationTimeout);
-            mutationTimeout = setTimeout(() => {
-                const containerExists = document.querySelector('#revive-filter-container');
-                if (!containerExists) {
-                    uiCreated = false;
-                    contentWrapper = document.querySelector('.content-wrapper');
-                    createFilterUI();
-                }
-                applyFilter(); // Reapply filters whenever the DOM changes
-            }, 50);
+            if (!document.querySelector('#revive-filter-button')) {
+                createFilterButton();
+            }
+            if (filterActive) {
+                applyFilter(); // Reapply filter if new elements are added
+            }
         });
 
-        if (contentWrapper) {
-            observer.observe(contentWrapper, { childList: true, subtree: true });
+        const targetNode = document.querySelector('.content-wrapper');
+        if (targetNode) {
+            observer.observe(targetNode, { childList: true, subtree: true });
         } else {
-            console.error('Hospital Revive Filter: Failed to observe DOM. .content-wrapper not found.');
+            console.error('Failed to observe the DOM. Content wrapper element not found.');
         }
     };
 
+    // Initialize the script
     const init = () => {
-        injectStyles();
-        contentWrapper = document.querySelector('.content-wrapper');
-        if (!contentWrapper) {
-            console.error('Hospital Revive Filter: .content-wrapper not found. The script will not run correctly.');
-            return;
-        }
-        createFilterUI();
-        applyFilter();
+        createFilterButton();
+        applyFilter(); // Apply the filter by default
         observeDOMChanges();
     };
 
     init();
-    console.log('Torn Hospital Revive Filter (Pagination Fixed) initialized.');
+    console.log('Torn Hospital Revive Filter Script loaded successfully.');
 })();
