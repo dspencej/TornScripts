@@ -1,19 +1,23 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      2.9.0
-// @description  Adds filtering functionality to the Torn hospital page with persistent filters, and ensures filters are applied once the user list is available.
+// @version      2.9.1
+// @description  Adds filtering functionality to the Torn hospital page. Filters now act as hide conditions, ensuring all unmatched reasons are shown.
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
+// @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hospitalFilter.js
+// @updateURL    https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hospitalFilter.js
 // ==/UserScript==
 
 (function () {
     'use strict';
 
     const FILTER_STORAGE_KEY = 'torn_hospital_filters';
-    let contentWrapper = null;
-    let uiCreated = false;
+    const MAX_RETRIES = 10;        // Retry limit for applyFilter if content isn't loaded yet
+    const RETRY_INTERVAL = 250;    // Retry interval in ms
+    const LOG_UNMATCHED_REASONS = false; // Set to true to log unmatched reasons (for debugging)
 
+    // All reasons are set to lowercase by default for consistency
     const filterOptions = [
         { id: 'filter-disabled-revives', label: 'Disabled Revives', reasons: null },
         { id: 'filter-hospitalized-by', label: 'Hospitalized by', reasons: ['hospitalized by'] },
@@ -27,8 +31,13 @@
         { id: 'filter-arson', label: 'Arson', reasons: ['arson'] },
     ];
 
+    let contentWrapper = null;
+    let mutationTimeout = null;
+    let uiCreated = false;
+
     function injectStyles() {
         if (document.getElementById('revive-filter-styles')) return;
+
         const style = document.createElement('style');
         style.id = 'revive-filter-styles';
         style.textContent = `
@@ -93,6 +102,7 @@
             if (option.reasons && Array.isArray(option.reasons)) {
                 option.reasons = option.reasons.map(r => r.toLowerCase());
             } else if (option.id !== 'filter-disabled-revives') {
+                // Warn if no reasons specified for non-disabled revives filters
                 if (!option.reasons || !Array.isArray(option.reasons)) {
                     console.warn(`Hospital Revive Filter: Filter ${option.id} is missing valid 'reasons'. This filter will be ignored.`);
                     option.reasons = [];
@@ -101,24 +111,26 @@
         });
     }
 
-    function saveFilterStates() {
+    const saveFilterStates = () => {
         const states = {};
         filterOptions.forEach(option => {
             const checkbox = document.querySelector(`#${option.id}`);
-            if (checkbox) states[option.id] = checkbox.checked;
+            if (checkbox) {
+                states[option.id] = checkbox.checked;
+            }
         });
         localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(states));
-    }
+    };
 
-    function loadFilterStates() {
+    const loadFilterStates = () => {
         const savedStates = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) || '{}');
         return filterOptions.reduce((acc, option) => {
             acc[option.id] = savedStates[option.id] !== undefined ? savedStates[option.id] : true;
             return acc;
         }, {});
-    }
+    };
 
-    function createFilterUI() {
+    const createFilterUI = () => {
         if (document.querySelector('#revive-filter-container') || uiCreated) return;
 
         const filterStates = loadFilterStates();
@@ -170,14 +182,19 @@
             contentWrapper.prepend(container);
             uiCreated = true;
         } else {
-            console.error('Hospital Revive Filter: Failed to find .content-wrapper.');
+            console.error('Hospital Revive Filter: Failed to find .content-wrapper to prepend the filter UI.');
         }
-    }
+    };
 
-    function applyFilter() {
+    const applyFilter = (retryCount = 0) => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
+
         if (userElements.length === 0) {
-            // No user elements yet, wait until they appear via mutation observer
+            if (retryCount < MAX_RETRIES) {
+                setTimeout(() => applyFilter(retryCount + 1), RETRY_INTERVAL);
+            } else {
+                console.warn('Hospital Revive Filter: User list not found after max retries. Filters not applied.');
+            }
             return;
         }
 
@@ -185,7 +202,7 @@
         const anyFilterEnabled = filterOptions.some(opt => opt.id !== 'filter-disabled-revives' && filters[opt.id]);
         const disabledRevivesEnabled = filters['filter-disabled-revives'];
 
-        // If no filters are enabled, show all users
+        // If no filters and disabled revives are not enabled, show all users and return
         if (!anyFilterEnabled && !disabledRevivesEnabled) {
             userElements.forEach(user => user.style.display = '');
             return;
@@ -196,41 +213,50 @@
             const reasonElement = user.querySelector('.reason');
             const reasonText = reasonElement ? reasonElement.textContent.trim().toLowerCase() : '';
 
-            // Disabled revives check
+            // If "Disabled Revives" is active and user has disabled revives, hide user
             if (disabledRevivesEnabled && reviveButton && reviveButton.classList.contains('reviveNotAvailable')) {
                 user.style.display = 'none';
                 return;
             }
 
-            // If no other filters enabled, show user
-            if (!anyFilterEnabled) {
-                user.style.display = '';
-                return;
+            // By default, show the user
+            let shouldShow = true;
+
+            // If there are other filters enabled (besides disabled revives), check if any match this reason
+            if (anyFilterEnabled) {
+                for (const option of filterOptions) {
+                    if (option.id === 'filter-disabled-revives') continue;
+                    if (filters[option.id] && option.reasons && option.reasons.some(r => reasonText.includes(r))) {
+                        // If a filter matches, hide the user
+                        shouldShow = false;
+                        break;
+                    }
+                }
             }
 
-            // Check other filters
-            let shouldShow = false;
-            for (const option of filterOptions) {
-                if (option.id === 'filter-disabled-revives') continue;
-                if (filters[option.id] && option.reasons && option.reasons.some(r => reasonText.includes(r))) {
-                    shouldShow = true;
-                    break;
-                }
+            if (!shouldShow && LOG_UNMATCHED_REASONS && reasonText && reasonElement) {
+                // If we wanted to log unmatched reasons, we would do so here.
+                // However, since we are now showing unmatched reasons, we do not log them as "unmatched".
+                // Instead, if we want debugging info, we could log all reasons displayed:
+                console.warn(`Hospital Revive Filter: Entry hidden by a filter. Reason: "${reasonElement.textContent.trim()}"`);
             }
 
             user.style.display = shouldShow ? '' : 'none';
         });
-    }
+    };
 
-    function observeDOMChanges() {
-        // Observe changes to contentWrapper to recreate UI if needed
+    const observeDOMChanges = () => {
         const observer = new MutationObserver(() => {
-            if (!document.querySelector('#revive-filter-container')) {
-                uiCreated = false;
-                contentWrapper = document.querySelector('.content-wrapper');
-                createFilterUI();
-                applyFilter();
-            }
+            clearTimeout(mutationTimeout);
+            mutationTimeout = setTimeout(() => {
+                const containerExists = document.querySelector('#revive-filter-container');
+                if (!containerExists) {
+                    uiCreated = false;
+                    contentWrapper = document.querySelector('.content-wrapper');
+                    createFilterUI();
+                    applyFilter();
+                }
+            }, 50);
         });
 
         if (contentWrapper) {
@@ -238,33 +264,21 @@
         } else {
             console.error('Hospital Revive Filter: Failed to observe DOM. .content-wrapper not found.');
         }
+    };
 
-        // Observe changes to the hospital list to apply filters whenever new elements appear
-        const userListContainer = document.querySelector('.userlist-wrapper.hospital-list-wrapper');
-        if (userListContainer) {
-            const userObserver = new MutationObserver(() => {
-                // Apply filters whenever user elements change
-                applyFilter();
-            });
-            userObserver.observe(userListContainer, { childList: true, subtree: true });
-        } else {
-            console.warn('Hospital Revive Filter: .hospital-list-wrapper not found at init. Filters will apply once it appears.');
-        }
-    }
-
-    function init() {
+    const init = () => {
         validateAndNormalizeFilters();
         injectStyles();
         contentWrapper = document.querySelector('.content-wrapper');
         if (!contentWrapper) {
-            console.error('Hospital Revive Filter: .content-wrapper not found. The script may not run correctly.');
+            console.error('Hospital Revive Filter: .content-wrapper not found. The script will not run correctly.');
             return;
         }
         createFilterUI();
         applyFilter();
         observeDOMChanges();
-    }
+    };
 
     init();
-    console.log('Torn Hospital Revive Filter (Observer Enhanced) initialized.');
+    console.log('Torn Hospital Revive Filter (Hide-based Logic) initialized.');
 })();
