@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Torn Hospital Revive Filter
+// @name         Torn Hospital Revive Filter (Pagination Fixed)
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      2.9.1
-// @description  Adds filtering functionality to the Torn hospital page. Filters now act as hide conditions, ensuring all unmatched reasons are shown.
+// @version      2.9.2
+// @description  Adds filtering functionality to the Torn hospital page. Retains filter states across pagination.
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
 // @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hospitalFilter.js
@@ -13,11 +13,9 @@
     'use strict';
 
     const FILTER_STORAGE_KEY = 'torn_hospital_filters';
-    const MAX_RETRIES = 10;        // Retry limit for applyFilter if content isn't loaded yet
     const RETRY_INTERVAL = 250;    // Retry interval in ms
-    const LOG_UNMATCHED_REASONS = false; // Set to true to log unmatched reasons (for debugging)
+    const MAX_RETRIES = 10;        // Retry limit for applyFilter if content isn't loaded yet
 
-    // All reasons are set to lowercase by default for consistency
     const filterOptions = [
         { id: 'filter-disabled-revives', label: 'Disabled Revives', reasons: null },
         { id: 'filter-hospitalized-by', label: 'Hospitalized by', reasons: ['hospitalized by'] },
@@ -31,9 +29,9 @@
         { id: 'filter-arson', label: 'Arson', reasons: ['arson'] },
     ];
 
+    let uiCreated = false;
     let contentWrapper = null;
     let mutationTimeout = null;
-    let uiCreated = false;
 
     function injectStyles() {
         if (document.getElementById('revive-filter-styles')) return;
@@ -55,12 +53,6 @@
             #revive-filter-container h3 {
                 margin-bottom: 10px;
                 color: #61dafb;
-            }
-            #revive-filter-container label {
-                margin-left: 10px;
-                font-size: 14px;
-                cursor: pointer;
-                color: #ffffff;
             }
             .filter-option-wrapper {
                 display: flex;
@@ -95,20 +87,6 @@
             }
         `;
         document.head.appendChild(style);
-    }
-
-    function validateAndNormalizeFilters() {
-        filterOptions.forEach(option => {
-            if (option.reasons && Array.isArray(option.reasons)) {
-                option.reasons = option.reasons.map(r => r.toLowerCase());
-            } else if (option.id !== 'filter-disabled-revives') {
-                // Warn if no reasons specified for non-disabled revives filters
-                if (!option.reasons || !Array.isArray(option.reasons)) {
-                    console.warn(`Hospital Revive Filter: Filter ${option.id} is missing valid 'reasons'. This filter will be ignored.`);
-                    option.reasons = [];
-                }
-            }
-        });
     }
 
     const saveFilterStates = () => {
@@ -202,7 +180,6 @@
         const anyFilterEnabled = filterOptions.some(opt => opt.id !== 'filter-disabled-revives' && filters[opt.id]);
         const disabledRevivesEnabled = filters['filter-disabled-revives'];
 
-        // If no filters and disabled revives are not enabled, show all users and return
         if (!anyFilterEnabled && !disabledRevivesEnabled) {
             userElements.forEach(user => user.style.display = '');
             return;
@@ -213,32 +190,20 @@
             const reasonElement = user.querySelector('.reason');
             const reasonText = reasonElement ? reasonElement.textContent.trim().toLowerCase() : '';
 
-            // If "Disabled Revives" is active and user has disabled revives, hide user
-            if (disabledRevivesEnabled && reviveButton && reviveButton.classList.contains('reviveNotAvailable')) {
-                user.style.display = 'none';
-                return;
-            }
-
-            // By default, show the user
             let shouldShow = true;
 
-            // If there are other filters enabled (besides disabled revives), check if any match this reason
+            if (disabledRevivesEnabled && reviveButton && reviveButton.classList.contains('reviveNotAvailable')) {
+                shouldShow = false;
+            }
+
             if (anyFilterEnabled) {
                 for (const option of filterOptions) {
                     if (option.id === 'filter-disabled-revives') continue;
                     if (filters[option.id] && option.reasons && option.reasons.some(r => reasonText.includes(r))) {
-                        // If a filter matches, hide the user
                         shouldShow = false;
                         break;
                     }
                 }
-            }
-
-            if (!shouldShow && LOG_UNMATCHED_REASONS && reasonText && reasonElement) {
-                // If we wanted to log unmatched reasons, we would do so here.
-                // However, since we are now showing unmatched reasons, we do not log them as "unmatched".
-                // Instead, if we want debugging info, we could log all reasons displayed:
-                console.warn(`Hospital Revive Filter: Entry hidden by a filter. Reason: "${reasonElement.textContent.trim()}"`);
             }
 
             user.style.display = shouldShow ? '' : 'none';
@@ -254,8 +219,8 @@
                     uiCreated = false;
                     contentWrapper = document.querySelector('.content-wrapper');
                     createFilterUI();
-                    applyFilter();
                 }
+                applyFilter(); // Reapply filters whenever the DOM changes
             }, 50);
         });
 
@@ -267,7 +232,6 @@
     };
 
     const init = () => {
-        validateAndNormalizeFilters();
         injectStyles();
         contentWrapper = document.querySelector('.content-wrapper');
         if (!contentWrapper) {
@@ -280,5 +244,5 @@
     };
 
     init();
-    console.log('Torn Hospital Revive Filter (Hide-based Logic) initialized.');
+    console.log('Torn Hospital Revive Filter (Pagination Fixed) initialized.');
 })();
