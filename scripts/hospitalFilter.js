@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.5.1
-// @description  Adds filtering functionality to the Torn hospital page, hides specific players based on revive status or hospitalization reasons.
+// @version      1.6.0
+// @description  Adds filtering functionality to the Torn hospital page, hiding specific players based on revive status or hospitalization reasons.
 // @author       Dustin Spencer
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
@@ -43,6 +43,7 @@
 
         container.appendChild(filterButton);
 
+        // Insert the button into the page; adjust selector if necessary
         const contentWrapper = document.querySelector('.content-wrapper');
         if (contentWrapper) {
             contentWrapper.prepend(container);
@@ -51,11 +52,13 @@
         }
     };
 
-    // Apply or remove the filter based on the current state
+    // Toggle the filter on or off when the button is clicked
     const toggleFilter = () => {
         filterActive = !filterActive;
         const filterButton = document.querySelector('#revive-filter-button');
-        filterButton.textContent = filterActive ? 'Disable Filter' : 'Enable Filter';
+        if (filterButton) {
+            filterButton.textContent = filterActive ? 'Disable Filter' : 'Enable Filter';
+        }
 
         if (filterActive) {
             applyFilter();
@@ -64,7 +67,7 @@
         }
     };
 
-    // Apply the filter to hide users with disabled revives or "Hospitalized by"
+    // Apply the filter to hide users with disabled revives or specific hospitalization reasons
     const applyFilter = () => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
         userElements.forEach((user) => {
@@ -72,6 +75,7 @@
             const reasonElement = user.querySelector('.reason');
             const reasonText = reasonElement ? reasonElement.textContent.trim() : '';
 
+            // Conditions to hide a user element
             const hasDisabledRevives = reviveButton && reviveButton.classList.contains('reviveNotAvailable');
             const hasHospitalizedByReason1 = reasonText.includes('Hospitalized by');
             const hasHospitalizedByReason2 = reasonText.includes('Mugged by');
@@ -79,47 +83,55 @@
             const hasHospitalizedByReason4 = reasonText.includes('Ipecac Syrup ingestion');
 
             if (hasDisabledRevives || hasHospitalizedByReason1 || hasHospitalizedByReason2 || hasHospitalizedByReason3 || hasHospitalizedByReason4) {
-                user.style.display = 'none'; // Hide the user
+                user.style.display = 'none'; // Hide the user element
             }
         });
-        console.log('Filter applied: Users with disabled revives or "Hospitalized by" reasons are hidden.');
+        console.log('Filter applied: Users with disabled revives or specified hospitalization reasons are hidden.');
     };
 
     // Clear the filter to show all users
     const clearFilter = () => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
         userElements.forEach((user) => {
-            user.style.display = ''; // Reset display to default
+            user.style.display = ''; // Reset the display style to default
         });
         console.log('Filter cleared: All users are visible.');
     };
 
     // Observe DOM changes to ensure the button is re-added if the page content changes
     const observeDOMChanges = () => {
+        const targetNode = document.querySelector('.content-wrapper');
+        if (!targetNode) {
+            console.error('Failed to observe the DOM. Content wrapper element not found.');
+            return;
+        }
+
         const observer = new MutationObserver(() => {
             if (!document.querySelector('#revive-filter-button')) {
                 createFilterButton();
             }
+            // Reapply the filter if new elements are added and the filter is active
             if (filterActive) {
-                applyFilter(); // Reapply filter if new elements are added
+                applyFilter();
             }
         });
 
-        const targetNode = document.querySelector('.content-wrapper');
-        if (targetNode) {
-            observer.observe(targetNode, { childList: true, subtree: true });
-        } else {
-            console.error('Failed to observe the DOM. Content wrapper element not found.');
-        }
+        observer.observe(targetNode, { childList: true, subtree: true });
     };
 
-    // Initialize the script
+    // Initialize the script once the DOM is fully loaded
     const init = () => {
         createFilterButton();
         applyFilter(); // Apply the filter by default
         observeDOMChanges();
     };
 
-    init();
+    // Wait for the DOM to be fully loaded before initializing
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
     console.log('Torn Hospital Revive Filter Script loaded successfully.');
 })();
