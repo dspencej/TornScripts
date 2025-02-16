@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.8.1
-// @description  Adds hospital filtering
-// @author       Dustin Spencer
+// @version      1.9.0
+// @description  Adds hospital filtering with persistence across page loads and pagination
+// @author       Dustin
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
 // @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hospitalFilter.js
@@ -13,10 +13,11 @@
 (function () {
     'use strict';
 
-    // Global flag to control whether filtering is active.
-    let filterActive = true;
+    // ----------------------------------------------------
+    // 1. Load persisted settings from localStorage, if any
+    // ----------------------------------------------------
 
-    // Define filter settings; each key corresponds to a checkbox control.
+    // Default filter settings.
     let filterSettings = {
         hideDisabledRevives: true,
         hideHospitalizedBy: true,
@@ -26,7 +27,31 @@
         hideLostTo: true
     };
 
-    // Create the filter UI, including the master toggle button and individual checkboxes.
+    // Global flag to control whether filtering is active.
+    let filterActive = true;
+
+    // Try to load filterActive from localStorage
+    const storedFilterActive = localStorage.getItem('hospitalFilterActive');
+    if (storedFilterActive !== null) {
+        filterActive = (storedFilterActive === 'true');
+    }
+
+    // Try to load filterSettings from localStorage
+    const storedFilterSettings = localStorage.getItem('hospitalFilterSettings');
+    if (storedFilterSettings) {
+        try {
+            const parsedSettings = JSON.parse(storedFilterSettings);
+            // Merge loaded settings into defaults (in case new keys get added later)
+            Object.assign(filterSettings, parsedSettings);
+        } catch (e) {
+            // If there's an error parsing, we ignore it and stick to defaults
+        }
+    }
+
+    // ----------------------------------------------------
+    // 2. Create the filter UI, including checkboxes + button
+    // ----------------------------------------------------
+
     const createFilterControls = () => {
         // Prevent duplicate controls
         if (document.querySelector('#revive-filter-controls')) return;
@@ -43,7 +68,7 @@
         container.style.gap = '10px';
         container.style.alignItems = 'center';
 
-        // Create master toggle button to enable/disable filtering entirely.
+        // Master toggle button
         const masterToggleButton = document.createElement('button');
         masterToggleButton.id = 'master-filter-toggle-button';
         masterToggleButton.textContent = filterActive ? 'Disable Filters' : 'Enable Filters';
@@ -56,17 +81,17 @@
         masterToggleButton.addEventListener('click', toggleMasterFilter);
         container.appendChild(masterToggleButton);
 
-        // Define each individual filter control.
+        // Define each individual filter control
         const controls = [
-            { key: 'hideDisabledRevives', label: 'Hide Disabled Revives', default: filterSettings.hideDisabledRevives },
-            { key: 'hideHospitalizedBy', label: "Hide 'Hospitalized by'", default: filterSettings.hideHospitalizedBy },
-            { key: 'hideMuggedBy', label: "Hide 'Mugged by'", default: filterSettings.hideMuggedBy },
-            { key: 'hideAttackedBy', label: "Hide 'Attacked by'", default: filterSettings.hideAttackedBy },
-            { key: 'hideIpecac', label: "Hide 'Ipecac Syrup ingestion'", default: filterSettings.hideIpecac },
-            { key: 'hideLostTo', label: "Hide 'Lost to'", default: filterSettings.hideLostTo }
+            { key: 'hideDisabledRevives', label: 'Hide Disabled Revives' },
+            { key: 'hideHospitalizedBy', label: "Hide 'Hospitalized by'" },
+            { key: 'hideMuggedBy', label: "Hide 'Mugged by'" },
+            { key: 'hideAttackedBy', label: "Hide 'Attacked by'" },
+            { key: 'hideIpecac', label: "Hide 'Ipecac Syrup ingestion'" },
+            { key: 'hideLostTo', label: "Hide 'Lost to'" }
         ];
 
-        // Create a checkbox and label for each control.
+        // Create a checkbox for each control
         controls.forEach(control => {
             const label = document.createElement('label');
             label.style.display = 'flex';
@@ -75,11 +100,14 @@
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = control.key;
-            checkbox.checked = control.default;
+            checkbox.checked = filterSettings[control.key];
             checkbox.style.marginRight = '5px';
+            checkbox.disabled = !filterActive; // disable if master filter is off
+
+            // When checkbox changes, update filterSettings and localStorage
             checkbox.addEventListener('change', function () {
                 filterSettings[control.key] = this.checked;
-                // Only reapply filter if filtering is active.
+                localStorage.setItem('hospitalFilterSettings', JSON.stringify(filterSettings));
                 if (filterActive) {
                     applyFilter();
                 }
@@ -90,24 +118,27 @@
             container.appendChild(label);
         });
 
-        // Insert the controls into the page; adjust the selector if necessary.
+        // Insert the controls into the page
         const contentWrapper = document.querySelector('.content-wrapper');
         if (contentWrapper) {
             contentWrapper.prepend(container);
-        } else {
-            console.error('Failed to find content wrapper to prepend the filter controls.');
         }
     };
 
-    // Toggle the master filter on or off.
+    // ----------------------------------------------------
+    // 3. Master toggle logic
+    // ----------------------------------------------------
+
     const toggleMasterFilter = () => {
         filterActive = !filterActive;
+        localStorage.setItem('hospitalFilterActive', filterActive.toString());
+
         const masterToggleButton = document.querySelector('#master-filter-toggle-button');
         if (masterToggleButton) {
             masterToggleButton.textContent = filterActive ? 'Disable Filters' : 'Enable Filters';
         }
 
-        // Enable or disable the checkboxes so users see they are inactive when filtering is off.
+        // Enable or disable the checkboxes
         const checkboxes = document.querySelectorAll('#revive-filter-controls input[type="checkbox"]');
         checkboxes.forEach(checkbox => {
             checkbox.disabled = !filterActive;
@@ -120,7 +151,11 @@
         }
     };
 
-    // Apply the filter: iterate over each user entry and hide it if any active filter condition is met.
+    // ----------------------------------------------------
+    // 4. Apply or clear filters
+    // ----------------------------------------------------
+
+    // Hide users if they match any checked filter condition
     const applyFilter = () => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
         userElements.forEach((user) => {
@@ -129,7 +164,6 @@
             const reasonText = reasonElement ? reasonElement.textContent.trim() : '';
             let shouldHide = false;
 
-            // Check each filter setting.
             if (filterSettings.hideDisabledRevives) {
                 const hasDisabledRevives = reviveButton && reviveButton.classList.contains('reviveNotAvailable');
                 if (hasDisabledRevives) {
@@ -154,31 +188,30 @@
 
             user.style.display = shouldHide ? 'none' : '';
         });
-        console.log('Filter applied with current settings:', filterSettings);
     };
 
-    // Clear the filter to show all users. Now removes the inline "display" style instead of setting it to an empty string.
+    // Show all users
     const clearFilter = () => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
         userElements.forEach((user) => {
             user.style.removeProperty('display');
         });
-        console.log('Filter cleared: All users are visible.');
     };
 
-    // Observe DOM changes to ensure that the filter controls remain visible and new elements get filtered.
+    // ----------------------------------------------------
+    // 5. Observe DOM changes (for pagination, etc.)
+    // ----------------------------------------------------
+
     const observeDOMChanges = () => {
         const targetNode = document.querySelector('.content-wrapper');
-        if (!targetNode) {
-            console.error('Failed to observe the DOM. Content wrapper element not found.');
-            return;
-        }
+        if (!targetNode) return;
 
         const observer = new MutationObserver(() => {
+            // Recreate controls if they are missing
             if (!document.querySelector('#revive-filter-controls')) {
                 createFilterControls();
             }
-            // Reapply the filter if new elements are added and filtering is active.
+            // If filter is active, reapply it when new elements appear
             if (filterActive) {
                 applyFilter();
             }
@@ -187,11 +220,14 @@
         observer.observe(targetNode, { childList: true, subtree: true });
     };
 
-    // Initialize the script once the DOM is fully loaded.
+    // ----------------------------------------------------
+    // 6. Initialize once the DOM is loaded
+    // ----------------------------------------------------
+
     const init = () => {
         createFilterControls();
         if (filterActive) {
-            applyFilter(); // Apply filters initially if active
+            applyFilter();
         }
         observeDOMChanges();
     };
@@ -201,6 +237,4 @@
     } else {
         init();
     }
-
-    console.log('Torn Hospital Revive Filter with Checkboxes and Master Toggle (Bug Fixed) loaded successfully.');
 })();
