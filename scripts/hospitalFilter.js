@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn Hospital Revive Filter
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.8.0
-// @description  Filters the Hospital Page
+// @version      1.8.1
+// @description  Adds hospital filtering
 // @author       Dustin Spencer
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
@@ -157,11 +157,11 @@
         console.log('Filter applied with current settings:', filterSettings);
     };
 
-    // Clear the filter to show all users.
+    // Clear the filter to show all users. Now removes the inline "display" style instead of setting it to an empty string.
     const clearFilter = () => {
         const userElements = document.querySelectorAll('.userlist-wrapper.hospital-list-wrapper li');
         userElements.forEach((user) => {
-            user.style.display = ''; // Reset the display style to default
+            user.style.removeProperty('display');
         });
         console.log('Filter cleared: All users are visible.');
     };
@@ -202,5 +202,5 @@
         init();
     }
 
-    console.log('Torn Hospital Revive Filter with Checkboxes and Master Toggle loaded successfully.');
+    console.log('Torn Hospital Revive Filter with Checkboxes and Master Toggle (Bug Fixed) loaded successfully.');
 })();
