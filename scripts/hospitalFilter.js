@@ -3,7 +3,7 @@
 // @namespace    https://github.com/dspencej/TornScripts
 // @version      1.9.0
 // @description  Adds hospital filtering with persistence across page loads and pagination
-// @author       Dustin
+// @author       dspencej
 // @license      MIT
 // @match        https://www.torn.com/hospitalview.php
 // @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hospitalFilter.js
