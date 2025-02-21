@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Torn Faction Member Filter
-// @namespace    https://github.com/dspencej/TornScripts
-// @version      1.0.0
-// @description  Adds filtering for faction members – filtering by revives enabled, player status, hospital status and hospitalization reason – with persistence.
-// @author       dspencej
+// @name         Torn Faction Member Show Filter
+// @namespace    https://github.com/yourusername/TornScripts
+// @version      1.2.0
+// @description  Filters faction member rows by player status and hospital status/reason using "show if" checkboxes, with persistent settings.
+// @author       YourName
 // @license      MIT
 // @match        https://www.torn.com/factions.php?*
 // @grant        none
@@ -15,33 +15,35 @@
     // ----------------------------------------------------
     // 1. Load persisted settings
     // ----------------------------------------------------
+    // Each checkbox here means “show entries with this attribute”.
+    // When at least one checkbox in a group is checked, only rows matching one of those criteria are allowed.
     let filterSettings = {
-        // When enabled, hide rows where the player's revive button is disabled.
-        hideDisabledRevives: false,
-        // Filter by player status. If checked, only rows matching the icon will show.
-        filterOnline: false,
-        filterIdle: false,
-        filterOffline: false,
-        // Hide players that appear to be in the hospital (based on text markers)
-        hideInHospital: false,
-        // Filter hospital reason: if nonempty, only show rows whose text contains this substring.
-        filterHospitalReason: ""
+        // Player status group – if any is checked, only show rows with one of the selected statuses.
+        showOnline: false,
+        showIdle: false,
+        showOffline: false,
+        // Hospital group:
+        // If true, only show rows that represent a hospitalized player.
+        showHospitalOnly: false,
+        // Hospital reason group – only applied to hospital rows.
+        // If any is checked, the hospital row must mention at least one of these phrases.
+        showHospitalizedBy: false,
+        showAttackedBy: false,
+        showLostTo: false
     };
 
     let filterActive = true;
-
     const storedFilterActive = localStorage.getItem('factionFilterActive');
     if (storedFilterActive !== null) {
         filterActive = storedFilterActive === 'true';
     }
-
     const storedFilterSettings = localStorage.getItem('factionFilterSettings');
     if (storedFilterSettings) {
         try {
             const parsed = JSON.parse(storedFilterSettings);
             Object.assign(filterSettings, parsed);
         } catch (e) {
-            // fallback to defaults on parse error
+            // Use defaults if parsing fails.
         }
     }
 
@@ -72,34 +74,27 @@
         masterButton.addEventListener('click', toggleMasterFilter);
         container.appendChild(masterButton);
 
-        // Revives filter checkbox
-        container.appendChild(createCheckboxControl('hideDisabledRevives', 'Hide players with disabled revives', filterSettings.hideDisabledRevives));
+        // --- Player Status Group ---
+        container.appendChild(createCheckboxControl('showOnline', 'Show Online', filterSettings.showOnline));
+        container.appendChild(createCheckboxControl('showIdle', 'Show Idle', filterSettings.showIdle));
+        container.appendChild(createCheckboxControl('showOffline', 'Show Offline', filterSettings.showOffline));
 
-        // Player status controls – one for each status.
-        container.appendChild(createCheckboxControl('filterOnline', 'Filter: Online', filterSettings.filterOnline));
-        container.appendChild(createCheckboxControl('filterIdle', 'Filter: Idle', filterSettings.filterIdle));
-        container.appendChild(createCheckboxControl('filterOffline', 'Filter: Offline', filterSettings.filterOffline));
+        // --- Hospital Group ---
+        container.appendChild(createCheckboxControl('showHospitalOnly', 'Show only hospital', filterSettings.showHospitalOnly));
 
-        // Hospital status filter checkbox
-        container.appendChild(createCheckboxControl('hideInHospital', 'Hide players in hospital', filterSettings.hideInHospital));
+        // --- Hospital Reason Group (only applies to hospital rows) ---
+        const reasonsContainer = document.createElement('div');
+        reasonsContainer.style.display = 'flex';
+        reasonsContainer.style.flexWrap = 'wrap';
+        reasonsContainer.style.gap = '10px';
+        reasonsContainer.style.marginLeft = '20px';
+        reasonsContainer.id = 'hospital-reason-controls';
+        reasonsContainer.appendChild(createCheckboxControl('showHospitalizedBy', 'Show if "Hospitalized by"', filterSettings.showHospitalizedBy));
+        reasonsContainer.appendChild(createCheckboxControl('showAttackedBy', 'Show if "Attacked by"', filterSettings.showAttackedBy));
+        reasonsContainer.appendChild(createCheckboxControl('showLostTo', 'Show if "Lost to"', filterSettings.showLostTo));
+        container.appendChild(reasonsContainer);
 
-        // Hospitalization reason text input
-        const reasonLabel = document.createElement('label');
-        reasonLabel.textContent = 'Hospitalization reason contains: ';
-        const reasonInput = document.createElement('input');
-        reasonInput.type = 'text';
-        reasonInput.id = 'filterHospitalReason';
-        reasonInput.value = filterSettings.filterHospitalReason;
-        reasonInput.style.padding = '4px';
-        reasonInput.addEventListener('input', function () {
-            filterSettings.filterHospitalReason = this.value;
-            saveSettings();
-            if (filterActive) applyFilter();
-        });
-        reasonLabel.appendChild(reasonInput);
-        container.appendChild(reasonLabel);
-
-        // Insert the controls into the page (adjust the selector as needed)
+        // Insert the controls into the page – adjust the selector as needed.
         const contentWrapper = document.querySelector('.content-wrapper') || document.body;
         contentWrapper.prepend(container);
     }
@@ -110,9 +105,9 @@
         label.style.alignItems = 'center';
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
+        checkbox.style.marginRight = '5px';
         checkbox.id = key;
         checkbox.checked = checked;
-        checkbox.style.marginRight = '5px';
         checkbox.addEventListener('change', function () {
             filterSettings[key] = this.checked;
             saveSettings();
@@ -135,11 +130,8 @@
         localStorage.setItem('factionFilterActive', filterActive.toString());
         const btn = document.getElementById('master-filter-toggle-button');
         if (btn) btn.textContent = filterActive ? 'Disable Filters' : 'Enable Filters';
-        // Optionally disable/enable other inputs:
         document.querySelectorAll('#faction-filter-controls input').forEach(input => {
-            if (input.id !== 'master-filter-toggle-button') {
-                input.disabled = !filterActive;
-            }
+            input.disabled = !filterActive;
         });
         if (filterActive) {
             applyFilter();
@@ -152,54 +144,65 @@
     // 4. Filtering logic
     // ----------------------------------------------------
     function applyFilter() {
-        // Assuming faction member rows have the selector '.table-body .table-row'
+        // Select all faction member rows.
         const rows = document.querySelectorAll('.table-body .table-row');
         rows.forEach(row => {
-            let shouldHide = false;
+            let show = true; // start with row shown
 
-            // Revives filter:
-            if (filterSettings.hideDisabledRevives) {
-                const reviveBtn = row.querySelector('a.revive');
-                if (reviveBtn && reviveBtn.classList.contains('reviveNotAvailable')) {
-                    shouldHide = true;
-                }
-            }
-
-            // Player status filter:
-            const statusWrap = row.querySelector('.userStatusWrap___ljSJG');
-            if (statusWrap) {
-                const svg = statusWrap.querySelector('svg');
-                if (svg) {
-                    const classStr = svg.getAttribute('class') || '';
-                    if (filterSettings.filterOnline && !classStr.includes('svg_status_online')) {
-                        shouldHide = true;
+            // --- Player Status Filtering ---
+            // Build an array of selected statuses.
+            const selectedStatuses = [];
+            if (filterSettings.showOnline) selectedStatuses.push('online');
+            if (filterSettings.showIdle) selectedStatuses.push('idle');
+            if (filterSettings.showOffline) selectedStatuses.push('offline');
+            if (selectedStatuses.length > 0) {
+                // Determine row status based on the SVG's fill attribute.
+                const statusWrap = row.querySelector('.userStatusWrap___ljSJG');
+                if (statusWrap) {
+                    const svg = statusWrap.querySelector('svg');
+                    if (svg) {
+                        const fillVal = svg.getAttribute('fill') || '';
+                        let rowStatus = '';
+                        if (fillVal.indexOf('#svg_status_online') !== -1) {
+                            rowStatus = 'online';
+                        } else if (fillVal.indexOf('#svg_status_idle') !== -1) {
+                            rowStatus = 'idle';
+                        } else if (fillVal.indexOf('#svg_status_offline') !== -1) {
+                            rowStatus = 'offline';
+                        }
+                        if (selectedStatuses.indexOf(rowStatus) === -1) {
+                            show = false;
+                        }
                     }
-                    if (filterSettings.filterIdle && !classStr.includes('svg_status_idle')) {
-                        shouldHide = true;
-                    }
-                    if (filterSettings.filterOffline && !classStr.includes('svg_status_offline')) {
-                        shouldHide = true;
-                    }
                 }
             }
 
-            // Hospital status: assume that if the row’s text contains one of these keywords it is showing hospital info.
-            if (filterSettings.hideInHospital) {
-                if (row.textContent.includes('Hospitalized by') ||
-                    row.textContent.includes('Attacked by') ||
-                    row.textContent.includes('Lost to')) {
-                    shouldHide = true;
+            // --- Hospital Filtering ---
+            // Determine if the row represents a hospitalized player.
+            const hospitalLi = row.querySelector('li[title*="<b>Hospital</b>"]');
+            const isHospital = Boolean(hospitalLi);
+
+            // If the "Show only hospital" filter is active, then only show rows that are in hospital.
+            if (filterSettings.showHospitalOnly && !isHospital) {
+                show = false;
+            }
+
+            // --- Hospital Reason Filtering ---
+            // For hospital rows, if any hospital reason checkbox is selected,
+            // then only show the row if the hospital element’s title contains at least one selected phrase.
+            const activeReasons = [];
+            if (filterSettings.showHospitalizedBy) activeReasons.push("Hospitalized by");
+            if (filterSettings.showAttackedBy) activeReasons.push("Attacked by");
+            if (filterSettings.showLostTo) activeReasons.push("Lost to");
+            if (isHospital && activeReasons.length > 0) {
+                const titleText = hospitalLi.getAttribute('title') || '';
+                const reasonMatch = activeReasons.some(reason => titleText.indexOf(reason) !== -1);
+                if (!reasonMatch) {
+                    show = false;
                 }
             }
 
-            // Hospitalization reason filter:
-            if (filterSettings.filterHospitalReason) {
-                if (!row.textContent.toLowerCase().includes(filterSettings.filterHospitalReason.toLowerCase())) {
-                    shouldHide = true;
-                }
-            }
-
-            row.style.display = shouldHide ? 'none' : '';
+            row.style.display = show ? '' : 'none';
         });
     }
 
@@ -226,7 +229,7 @@
     }
 
     // ----------------------------------------------------
-    // 6. Initialize once DOM is loaded
+    // 6. Initialize the script
     // ----------------------------------------------------
     function init() {
         createFilterControls();
