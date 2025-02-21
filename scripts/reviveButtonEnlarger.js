@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Torn Profile Button Enhancements
+// @name         Torn Revive Button Enbiggerator
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.1.0
+// @version      1.2.0
 // @description  Enlarges the revive button and hides the display case button on a user's profile page in Torn.
-// @author       Dustin Spencer
+// @author       dspencej
 // @license      MIT
 // @match        https://www.torn.com/profiles.php?XID=*
 // @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/profileButtonEnhancements.js
