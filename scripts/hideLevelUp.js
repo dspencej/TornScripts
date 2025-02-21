@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Hide Torn Info Message
+// @name         Hide Torn Level-up Message
 // @namespace    https://github.com/dspencej/TornScripts
 // @version      1.1.0
 // @description  Hides the congratulatory level-up message on all Torn pages.
