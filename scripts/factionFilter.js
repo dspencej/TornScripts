@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Torn Faction Member Show Filter
-// @namespace    https://github.com/yourusername/TornScripts
+// @namespace    https://github.com/dspencej/TornScripts
 // @version      1.2.0
-// @description  Filters faction member rows by player status and hospital status/reason using "show if" checkboxes, with persistent settings.
-// @author       YourName
+// @description  Filters faction members
+// @author       dspencej
 // @license      MIT
 // @match        https://www.torn.com/factions.php?*
 // @grant        none
