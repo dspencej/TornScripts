@@ -7,6 +7,8 @@
 // @license      MIT
 // @match        https://www.torn.com/*
 // @grant        none
+// @downloadURL  https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hideLevelUp.js
+// @updateURL    https://raw.githubusercontent.com/dspencej/TornScripts/refs/heads/main/scripts/hideLevelUp.js
 // ==/UserScript==
 
 (function() {
