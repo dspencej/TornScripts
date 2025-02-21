@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Torn Faction Member Show Filter
+// @name         Torn Faction Member Filter
 // @namespace    https://github.com/dspencej/TornScripts
 // @version      1.2.0
 // @description  Filters faction members
