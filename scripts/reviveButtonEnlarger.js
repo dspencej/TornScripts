@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn Revive Button Enlarger
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.4.0
+// @version      1.5.0
 // @description  Enlarges the revive button and hides the display case button on a user's profile page in Torn.
 // @author       dspencej
 // @license      MIT
@@ -17,6 +17,8 @@
 
     // Ensure we auto-click at most once per page load
     let hasAutoClickedRevive = false;
+    // Ensure we center at most once per page load
+    let hasCenteredRevive = false;
 
     const isClickable = (el) => {
         if (!el) return false;
@@ -45,6 +47,26 @@
                 }
             }, 250);
         }
+    };
+
+    const centerReviveButton = () => {
+        if (hasCenteredRevive) return;
+        const reviveButton = document.querySelector('.profile-button-revive');
+        if (!reviveButton) return;
+        const style = window.getComputedStyle(reviveButton);
+        if (!style || style.display === 'none' || style.visibility === 'hidden') return;
+        if (!(reviveButton.offsetWidth > 0 && reviveButton.offsetHeight > 0)) return;
+
+        hasCenteredRevive = true;
+        setTimeout(() => {
+            try {
+                reviveButton.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                console.log('Revive button centered in viewport.');
+            } catch (e) {
+                // Fallback
+                reviveButton.scrollIntoView(true);
+            }
+        }, 150);
     };
 
     // Enlarge the revive button
@@ -85,6 +107,7 @@
     const handleProfileButtons = () => {
         enlargeReviveButton();
         hideDisplayCaseButton();
+        centerReviveButton();
         autoClickRevive();
     };
 
