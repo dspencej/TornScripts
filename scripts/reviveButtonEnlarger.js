@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn Revive Button Enlarger
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.3.0
+// @version      1.4.0
 // @description  Enlarges the revive button and hides the display case button on a user's profile page in Torn.
 // @author       dspencej
 // @license      MIT
@@ -14,6 +14,38 @@
 
 (function () {
     'use strict';
+
+    // Ensure we auto-click at most once per page load
+    let hasAutoClickedRevive = false;
+
+    const isClickable = (el) => {
+        if (!el) return false;
+        if (hasAutoClickedRevive) return false;
+        if (el.hasAttribute('disabled')) return false;
+        if (el.classList && el.classList.contains('disabled')) return false;
+        const style = window.getComputedStyle(el);
+        if (!style) return false;
+        if (style.display === 'none' || style.visibility === 'hidden' || style.pointerEvents === 'none') return false;
+        if (!(el.offsetWidth > 0 && el.offsetHeight > 0)) return false;
+        return true;
+    };
+
+    const autoClickRevive = () => {
+        if (hasAutoClickedRevive) return;
+        const reviveButton = document.querySelector('.profile-button-revive');
+        if (isClickable(reviveButton)) {
+            hasAutoClickedRevive = true;
+            setTimeout(() => {
+                try {
+                    reviveButton.click();
+                    console.log('Revive button auto-clicked.');
+                } catch (e) {
+                    console.warn('Failed to auto-click revive button:', e);
+                    hasAutoClickedRevive = false; // allow a retry if needed
+                }
+            }, 250);
+        }
+    };
 
     // Enlarge the revive button
     const enlargeReviveButton = () => {
@@ -53,6 +85,7 @@
     const handleProfileButtons = () => {
         enlargeReviveButton();
         hideDisplayCaseButton();
+        autoClickRevive();
     };
 
     // Observe DOM changes for dynamic content
