@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn Revive Button Enlarger
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.8.0
+// @version      1.9.0
 // @description  Enlarges the revive button, hides display case button, and centers
 // @author       dspencej
 // @license      MIT
@@ -134,8 +134,6 @@
                     } else {
                         _0x10(noButton);
                     }
-                } else {
-                    _0x10(yesButton);
                 }
             }
         }
