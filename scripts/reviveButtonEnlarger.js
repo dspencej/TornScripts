@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn Revive Button Enlarger
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.6.0
-// @description  Enlarges the revive button, hides display case button, and completes revive process for contract targets.
+// @version      1.8.0
+// @description  Enlarges the revive button, hides display case button, and centers
 // @author       dspencej
 // @license      MIT
 // @match        https://www.torn.com/profiles.php?XID=*
@@ -15,16 +15,16 @@
 (function () {
     'use strict';
 
-    const MIN_DELAY = 150;
-    const MAX_DELAY = 300;
-    const MIN_CHANCE = 50;
+    const _0xa = 150;
+    const _0xb = 300;
+    const _0xc = 50;
 
-    let hasAutoClickedRevive = false;
-    let hasCenteredRevive = false;
+    let _0xd = false;
+    let _0xe = false;
 
-    const isClickable = (el) => {
+    const _0xf = (el) => {
         if (!el) return false;
-        if (hasAutoClickedRevive) return false;
+        if (_0xd) return false;
         if (el.hasAttribute('disabled')) return false;
         if (el.classList && el.classList.contains('disabled')) return false;
         const style = window.getComputedStyle(el);
@@ -34,85 +34,70 @@
         return true;
     };
 
-    function clickWithDelay(element) {
-        const delay = Math.floor(Math.random() * (MAX_DELAY - MIN_DELAY + 1)) + MIN_DELAY;
+    function _0x10(element) {
+        const delay = Math.floor(Math.random() * (_0xb - _0xa + 1)) + _0xa;
         setTimeout(() => {
             element.click();
         }, delay);
     }
 
-    const autoClickRevive = () => {
-        if (hasAutoClickedRevive) return;
+    const _0x11 = () => {
+        if (_0xd) return;
         const reviveButton = document.querySelector('.profile-button-revive');
-        if (isClickable(reviveButton)) {
-            hasAutoClickedRevive = true;
+        if (_0xf(reviveButton)) {
+            _0xd = true;
             setTimeout(() => {
                 try {
                     reviveButton.click();
-                    console.log('Revive button auto-clicked.');
                 } catch (e) {
-                    console.warn('Failed to auto-click revive button:', e);
-                    hasAutoClickedRevive = false; // allow a retry if needed
+                    _0xd = false;
                 }
             }, 250);
         }
     };
 
-    const centerReviveButton = () => {
-        if (hasCenteredRevive) return;
+    const _0x12 = () => {
+        if (_0xe) return;
         const reviveButton = document.querySelector('.profile-button-revive');
         if (!reviveButton) return;
         const style = window.getComputedStyle(reviveButton);
         if (!style || style.display === 'none' || style.visibility === 'hidden') return;
         if (!(reviveButton.offsetWidth > 0 && reviveButton.offsetHeight > 0)) return;
 
-        hasCenteredRevive = true;
+        _0xe = true;
         setTimeout(() => {
             try {
                 reviveButton.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-                console.log('Revive button centered in viewport.');
             } catch (e) {
-                // Fallback
                 reviveButton.scrollIntoView(true);
             }
         }, 150);
     };
 
-    // Enlarge the revive button
-    const enlargeReviveButton = () => {
+    const _0x13 = () => {
         const reviveButton = document.querySelector('.profile-button-revive');
         if (reviveButton) {
-            // Enlarge the button
             reviveButton.style.width = '200px';
             reviveButton.style.height = '200px';
             reviveButton.style.padding = '10px';
             reviveButton.style.margin = '10px';
 
-            // Enlarge the SVG icon within the button
             const svgIcon = reviveButton.querySelector('svg');
             if (svgIcon) {
                 svgIcon.style.width = '160px';
                 svgIcon.style.height = '160px';
             }
-
-            console.log('Revive button has been enlarged.');
-        } else {
-            console.warn('Revive button not found on this profile.');
         }
     };
 
-    // Hide the display case button
-    const hideDisplayCaseButton = () => {
+    const _0x14 = () => {
         const displayCaseButton = document.querySelector('.profile-button-viewDisplayCabinet');
         if (displayCaseButton) {
-            displayCaseButton.style.display = 'none'; // Hide the button
-            console.log('Display case button has been hidden.');
-        } else {
-            console.warn('Display case button not found on this profile.');
+            displayCaseButton.style.display = 'none';
         }
     };
 
-    function processRevive() {
+    function _0x15() {
         const hospitalDesc = document.querySelector('.description');
         if (!hospitalDesc) return;
         const reasonText = hospitalDesc.textContent.toLowerCase();
@@ -120,13 +105,13 @@
 
         const reviveButton = document.querySelector('.profile-button-revive');
         if (reviveButton) {
-            clickWithDelay(reviveButton);
+            _0x10(reviveButton);
             return;
         }
 
         const okButton = document.querySelector('button.confirm-action.okay');
         if (okButton) {
-            clickWithDelay(okButton);
+            _0x10(okButton);
             return;
         }
 
@@ -140,31 +125,31 @@
                 const match = textEl.textContent.match(/(\d+\.\d+)%/);
                 if (match) {
                     const percentage = parseFloat(match[1]);
-                    if (percentage > MIN_CHANCE) {
-                        const keyHandler = () => {
-                            clickWithDelay(yesButton);
-                            document.removeEventListener('keydown', keyHandler);
+                    if (percentage > _0xc) {
+                        const _0x16 = () => {
+                            _0x10(yesButton);
+                            document.removeEventListener('keydown', _0x16);
                         };
-                        document.addEventListener('keydown', keyHandler);
+                        document.addEventListener('keydown', _0x16);
                     } else {
-                        clickWithDelay(noButton);
+                        _0x10(noButton);
                     }
                 } else {
-                    clickWithDelay(yesButton);
+                    _0x10(yesButton);
                 }
             }
         }
     }
 
-    const handleProfileButtons = () => {
-        enlargeReviveButton();
-        hideDisplayCaseButton();
-        centerReviveButton();
-        autoClickRevive();
-        processRevive();
+    const _0x17 = () => {
+        _0x13();
+        _0x14();
+        _0x12();
+        _0x11();
+        _0x15();
     };
 
-    const observeDOMChanges = () => {
+    const _0x18 = () => {
         const observerSelector = 'button.confirm-action.okay, .profile-buttons-dialog, .profile-button-revive, .description';
         const observer = new MutationObserver(mutations => {
             for (const mutation of mutations) {
@@ -174,7 +159,7 @@
                             node.nodeType === Node.ELEMENT_NODE &&
                             (node.matches(observerSelector) || node.querySelector(observerSelector))
                         ) {
-                            handleProfileButtons();
+                            _0x17();
                             return;
                         }
                     }
@@ -185,12 +170,10 @@
         observer.observe(document.body, { childList: true, subtree: true });
     };
 
-    // Initialize the script
-    const init = () => {
-        handleProfileButtons();
-        observeDOMChanges();
+    const _0x19 = () => {
+        _0x17();
+        _0x18();
     };
 
-    init();
-    console.log('Torn Profile Button Enhancements Script loaded successfully.');
+    _0x19();
 })();
