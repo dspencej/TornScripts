@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn Revive Button Enlarger
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.5.0
-// @description  Enlarges the revive button and hides the display case button on a user's profile page in Torn.
+// @version      1.6.0
+// @description  Enlarges the revive button, hides display case button, and completes revive process for contract targets.
 // @author       dspencej
 // @license      MIT
 // @match        https://www.torn.com/profiles.php?XID=*
@@ -15,9 +15,11 @@
 (function () {
     'use strict';
 
-    // Ensure we auto-click at most once per page load
+    const MIN_DELAY = 150;
+    const MAX_DELAY = 300;
+    const MIN_CHANCE = 50;
+
     let hasAutoClickedRevive = false;
-    // Ensure we center at most once per page load
     let hasCenteredRevive = false;
 
     const isClickable = (el) => {
@@ -31,6 +33,13 @@
         if (!(el.offsetWidth > 0 && el.offsetHeight > 0)) return false;
         return true;
     };
+
+    function clickWithDelay(element) {
+        const delay = Math.floor(Math.random() * (MAX_DELAY - MIN_DELAY + 1)) + MIN_DELAY;
+        setTimeout(() => {
+            element.click();
+        }, delay);
+    }
 
     const autoClickRevive = () => {
         if (hasAutoClickedRevive) return;
@@ -103,18 +112,74 @@
         }
     };
 
-    // Function to handle both actions
+    function processRevive() {
+        const hospitalDesc = document.querySelector('.description');
+        if (!hospitalDesc) return;
+        const reasonText = hospitalDesc.textContent.toLowerCase();
+        if (!reasonText.includes('hospitalized by')) return;
+
+        const reviveButton = document.querySelector('.profile-button-revive');
+        if (reviveButton) {
+            clickWithDelay(reviveButton);
+            return;
+        }
+
+        const okButton = document.querySelector('button.confirm-action.okay');
+        if (okButton) {
+            clickWithDelay(okButton);
+            return;
+        }
+
+        const dialog = document.querySelector('.profile-buttons-dialog');
+        if (dialog) {
+            const textEl = dialog.querySelector('.text');
+            const yesButton = dialog.querySelector('.confirm-action-yes');
+            const noButton = dialog.querySelector('.confirm-action-no');
+
+            if (textEl && yesButton && noButton) {
+                const match = textEl.textContent.match(/(\d+\.\d+)%/);
+                if (match) {
+                    const percentage = parseFloat(match[1]);
+                    if (percentage > MIN_CHANCE) {
+                        const keyHandler = () => {
+                            clickWithDelay(yesButton);
+                            document.removeEventListener('keydown', keyHandler);
+                        };
+                        document.addEventListener('keydown', keyHandler);
+                    } else {
+                        clickWithDelay(noButton);
+                    }
+                } else {
+                    clickWithDelay(yesButton);
+                }
+            }
+        }
+    }
+
     const handleProfileButtons = () => {
         enlargeReviveButton();
         hideDisplayCaseButton();
         centerReviveButton();
         autoClickRevive();
+        processRevive();
     };
 
-    // Observe DOM changes for dynamic content
     const observeDOMChanges = () => {
-        const observer = new MutationObserver(() => {
-            handleProfileButtons();
+        const observerSelector = 'button.confirm-action.okay, .profile-buttons-dialog, .profile-button-revive, .description';
+        const observer = new MutationObserver(mutations => {
+            for (const mutation of mutations) {
+                if (mutation.type === 'childList') {
+                    for (const node of mutation.addedNodes) {
+                        if (
+                            node.nodeType === Node.ELEMENT_NODE &&
+                            (node.matches(observerSelector) || node.querySelector(observerSelector))
+                        ) {
+                            handleProfileButtons();
+                            return;
+                        }
+                    }
+                }
+            }
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
