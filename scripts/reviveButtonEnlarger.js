@@ -126,11 +126,8 @@
                 if (match) {
                     const percentage = parseFloat(match[1]);
                     if (percentage > _0xc) {
-                        const _0x16 = () => {
-                            _0x10(yesButton);
-                            document.removeEventListener('keydown', _0x16);
-                        };
-                        document.addEventListener('keydown', _0x16);
+                        // *** MINIMAL CHANGE HERE ***
+                        _0x10(yesButton);  // Automatically select "yes"
                     }
                 }
             }
