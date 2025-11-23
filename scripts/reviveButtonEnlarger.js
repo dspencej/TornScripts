@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn Revive Button Enlarger
 // @namespace    https://github.com/dspencej/TornScripts
-// @version      1.11.0
+// @version      1.12.0
 // @description  Enlarges the revive button, hides display case button, and centers
 // @author       dspencej
 // @license      MIT
@@ -15,46 +15,7 @@
 (function () {
     'use strict';
 
-    const _0xa = 150;
-    const _0xb = 300;
-    const _0xc = 50;
-
-    let _0xd = false;
     let _0xe = false;
-
-    const _0xf = (el) => {
-        if (!el) return false;
-        if (_0xd) return false;
-        if (el.hasAttribute('disabled')) return false;
-        if (el.classList && el.classList.contains('disabled')) return false;
-        const style = window.getComputedStyle(el);
-        if (!style) return false;
-        if (style.display === 'none' || style.visibility === 'hidden' || style.pointerEvents === 'none') return false;
-        if (!(el.offsetWidth > 0 && el.offsetHeight > 0)) return false;
-        return true;
-    };
-
-    function _0x10(element) {
-        const delay = Math.floor(Math.random() * (_0xb - _0xa + 1)) + _0xa;
-        setTimeout(() => {
-            element.click();
-        }, delay);
-    }
-
-    const _0x11 = () => {
-        if (_0xd) return;
-        const reviveButton = document.querySelector('.profile-button-revive');
-        if (_0xf(reviveButton)) {
-            _0xd = true;
-            setTimeout(() => {
-                try {
-                    reviveButton.click();
-                } catch (e) {
-                    _0xd = false;
-                }
-            }, 250);
-        }
-    };
 
     const _0x12 = () => {
         if (_0xe) return;
@@ -97,53 +58,14 @@
         }
     };
 
-    function _0x15() {
-        const hospitalDesc = document.querySelector('.description');
-        if (!hospitalDesc) return;
-        const reasonText = hospitalDesc.textContent.toLowerCase();
-        if (!reasonText.includes('hospitalized by')) return;
-
-        const reviveButton = document.querySelector('.profile-button-revive');
-        if (reviveButton) {
-            _0x10(reviveButton);
-            return;
-        }
-
-        const okButton = document.querySelector('button.confirm-action.okay');
-        if (okButton) {
-            _0x10(okButton);
-            return;
-        }
-
-        const dialog = document.querySelector('.profile-buttons-dialog');
-        if (dialog) {
-            const textEl = dialog.querySelector('.text');
-            const yesButton = dialog.querySelector('.confirm-action-yes');
-            const noButton = dialog.querySelector('.confirm-action-no');
-
-            if (textEl && yesButton && noButton) {
-                const match = textEl.textContent.match(/(\d+\.\d+)%/);
-                if (match) {
-                    const percentage = parseFloat(match[1]);
-                    if (percentage > _0xc) {
-                        // *** MINIMAL CHANGE HERE ***
-                        _0x10(yesButton);  // Automatically select "yes"
-                    }
-                }
-            }
-        }
-    }
-
     const _0x17 = () => {
         _0x13();
         _0x14();
         _0x12();
-        _0x11();
-        _0x15();
     };
 
     const _0x18 = () => {
-        const observerSelector = 'button.confirm-action.okay, .profile-buttons-dialog, .profile-button-revive, .description';
+        const observerSelector = '.profile-button-revive, .profile-button-viewDisplayCabinet';
         const observer = new MutationObserver(mutations => {
             for (const mutation of mutations) {
                 if (mutation.type === 'childList') {
